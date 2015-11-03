@@ -150,6 +150,9 @@ void starformation(int p, int centralgal, double time, double dt, int nstep)
        * inside DETAILED_METALS_AND_MASS_RETURN */
     	if (stars > 0.)
     		SN_feedback(p, centralgal, stars, "ColdGas");
+#ifdef AGNFB 
+                AGN_feedback(p, centralgal,stars, "ColdGas");
+#endif
   #endif
 
 
@@ -545,14 +548,19 @@ void SN_feedback(int p, int centralgal, double stars, char feedback_location[])
 	  	update_from_feedback(p, centralgal, reheated_mass, ejected_mass);
 }
 
-//void AGN_feedback(int a, int b, double stars)
-//{
+#ifdef AGNFB 
+void AGN_feedback(int p, int centralgal, double stars,char feedback_location[])
+{
+  double reheated_mass=0., ejected_mass=0.,proportionality_constant1=0.01,proportionality_constant2=0.02;
   
-//  reheated_mass = a*stars;
-//  ejected_mass = b*stars;
-//  if (reheated_mass + ejected_mass > 0.)
-//        update_from_feedback(p, centralgal, reheated_mass, ejected_mass);
-//}
+  //set AGN feedback proportional to star formation rate (proportional to total mass availabel
+  //needs better model
+  reheated_mass = proportionality_constant1*stars;
+  ejected_mass = proportionality_constant2*stars;
+  if (reheated_mass + ejected_mass > 0.)
+        update_from_feedback(p, centralgal, reheated_mass, ejected_mass);
+}
+#endif
 
 /** @brief Updates cold, hot and external gas components due to SN
  *         reheating and ejection. */

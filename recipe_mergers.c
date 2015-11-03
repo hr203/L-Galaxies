@@ -709,6 +709,9 @@ double collisional_starburst_recipe(double mass_ratio, int merger_centralgal, in
 #ifndef FEEDBACK_COUPLED_WITH_MASS_RETURN
   if (mstars > 0.)
   	SN_feedback(merger_centralgal, centralgal, mstars, "ColdGas");
+#ifdef AGNFB
+  	SN_feedback(merger_centralgal, centralgal, mstars, "ColdGas");
+#endif
 #endif
 
 

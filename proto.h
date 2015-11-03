@@ -115,6 +115,9 @@ void assign_files_to_tasks(int *FileToProcess, int *TaskToProcess, int ThisTask,
 void starformation(int p, int centralgal, double time, double dt, int nstep);
 void update_stars_due_to_reheat(int p, int centralgal, double *stars);
 void SN_feedback(int p, int centralgal, double stars, char feedback_location[]);
+#ifdef AGNFB
+void SN_feedback(int p, int centralgal, double stars, char feedback_location[]);
+#endif
 void add_galaxies_together(int t, int p);
 void init_galaxy(int p, int halonr);
 double infall_recipe(int centralgal, int ngal, double Zcurr);
