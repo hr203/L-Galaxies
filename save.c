@@ -104,11 +104,10 @@ void close_galaxy_files(void)
 void save_galaxy_append(int tree, int i, int n)
 {
   struct GALAXY_OUTPUT galaxy_output;
-#ifndef NORMALIZEDDB
-  prepare_galaxy_for_output(n, &HaloGal[i], &galaxy_output);
 
+  prepare_galaxy_for_output(n, &HaloGal[i], &galaxy_output);
   myfwrite(&galaxy_output, sizeof(struct GALAXY_OUTPUT), 1, FdGalDumps[n]);
-#endif
+
   TotGalaxies[n]++;		//this will be written later
   TreeNgals[n][tree]++;		//this will be written later (Number of galaxies in each tree)
 }
@@ -116,15 +115,10 @@ void save_galaxy_append(int tree, int i, int n)
 
  /*@brief Copies all the relevant properties from the Galaxy structure
         into the Galaxy output structure, some units are corrected.*/
-#ifdef NORMALIZEDDB
-void prepare_galaxy_for_output(int n, struct GALAXY *g, struct GALAXY_OUTPUT *o, struct SFH_BIN *sfh_bin)
-#else
 void prepare_galaxy_for_output(int n, struct GALAXY *g, struct GALAXY_OUTPUT *o)
-#endif
 {
   int j,ibin;
 
-#ifndef NO_PROPS_OUTPUTS
   o->Type = g->Type;
   o->SnapNum = g->SnapNum;
   o->CentralMvir = get_virial_mass(Halo[g->HaloNr].FirstHaloInFOFgroup);
@@ -135,8 +129,8 @@ void prepare_galaxy_for_output(int n, struct GALAXY *g, struct GALAXY_OUTPUT *o)
 
   for(j = 0; j < 3; j++)
     {
-	  o->Pos[j] = g->Pos[j];
-	  o->DistanceToCentralGal[j] = wrap(Halo[Halo[g->HaloNr].FirstHaloInFOFgroup].Pos[j] - g->Pos[j],BoxSize);;
+      o->Pos[j] = g->Pos[j];
+      o->DistanceToCentralGal[j] = wrap(Halo[Halo[g->HaloNr].FirstHaloInFOFgroup].Pos[j] - g->Pos[j],BoxSize);
     }
 
   o->ColdGas = g->ColdGas;
@@ -145,7 +139,6 @@ void prepare_galaxy_for_output(int n, struct GALAXY *g, struct GALAXY_OUTPUT *o)
   o->BulgeMass = g->BulgeMass;
   o->HotGas = g->HotGas;
   o->BlackHoleMass = g->BlackHoleMass;
-#endif
 
 
 #ifdef COMPUTE_SPECPHOT_PROPERTIES
@@ -160,7 +153,6 @@ void prepare_galaxy_for_output(int n, struct GALAXY *g, struct GALAXY_OUTPUT *o)
 
 #ifndef LIGHT_OUTPUT
   
-#ifndef NO_PROPS_OUTPUTS
 #ifdef GALAXYTREE
   o->HaloID = HaloIDs[g->HaloNr].HaloID;
   o->Redshift = ZZ[g->SnapNum];
@@ -208,7 +200,7 @@ void prepare_galaxy_for_output(int n, struct GALAXY *g, struct GALAXY_OUTPUT *o)
 
   o->BulgeSize = g->BulgeSize;
   o->EjectedMass = CORRECTDBFLOAT(g->EjectedMass);
-  //o->BlackHoleGas = g->BlackHoleGas;
+  o->ICM = g->ICM;
 
   for(j = 0; j < 3; j++)
     {
@@ -229,14 +221,11 @@ void prepare_galaxy_for_output(int n, struct GALAXY *g, struct GALAXY_OUTPUT *o)
   o->GasDiskRadius = g->GasDiskRadius;
   o->StellarDiskRadius = g->StellarDiskRadius;
   o->CoolingRadius = g->CoolingRadius;
-  o->ICM = g->ICM;
-  //o->MetalsICM = CORRECTDBFLOAT(g->MetalsICM);
-  o->MetalsICM = g->MetalsICM;
-  o->QuasarAccretionRate = g->QuasarAccretionRate * UnitMass_in_g / UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS;
-  o->RadioAccretionRate = g->RadioAccretionRate * UnitMass_in_g / UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS;
+
+  o->QuasarAccretionRate = g->QuasarAccretionRate * UNITMASS_IN_G / UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS;
+  o->RadioAccretionRate = g->RadioAccretionRate * UNITMASS_IN_G / UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS;
   o->CosInclination = g->CosInclination;
 
-#ifndef HT09_DISRUPTION
   if(g->Type == 2 || (g->Type == 1 && g->MergeOn == 1)) {
     o->OriMergTime=g->OriMergTime*UnitTime_in_years/Hubble_h;
     o->MergTime = g->MergTime*UnitTime_in_years/Hubble_h;
@@ -245,16 +234,6 @@ void prepare_galaxy_for_output(int n, struct GALAXY *g, struct GALAXY_OUTPUT *o)
     o->OriMergTime=0.0;
     o->MergTime = 0.0;
   }
-#else
-  if(g->Type == 2 || (g->Type == 1 && g->MergeOn == 1)) {
-     o->OriMergRadius=g->OriMergRadius;
-     o->MergRadius = g->MergRadius;
-   }
-   else {
-     o->OriMergRadius=0.0;
-     o->MergRadius = 0.0;
-   }
-#endif
 
 #ifndef GALAXYTREE
   o->HaloIndex = g->HaloNr;
@@ -267,32 +246,32 @@ void prepare_galaxy_for_output(int n, struct GALAXY *g, struct GALAXY_OUTPUT *o)
 #ifdef GALAXYTREE
   o->DisruptOn = g->DisruptOn;
 #endif
-#ifdef MERGE01
   o->MergeOn = g->MergeOn;
-#endif
-
 
 //METALS
-
-  /**/
+#ifndef   DETAILED_METALS_AND_MASS_RETURN
   o->MetalsColdGas = CORRECTDBFLOAT(g->MetalsColdGas);
   o->MetalsStellarMass = CORRECTDBFLOAT(g->MetalsDiskMass)+ CORRECTDBFLOAT(g->MetalsBulgeMass);
   o->MetalsDiskMass = CORRECTDBFLOAT(g->MetalsDiskMass);
   o->MetalsBulgeMass = CORRECTDBFLOAT(g->MetalsBulgeMass);
   o->MetalsHotGas = CORRECTDBFLOAT(g->MetalsHotGas);
-  o->MetalsEjectedMass = CORRECTDBFLOAT(g->MetalsEjectedMass);   
+  o->MetalsEjectedMass = CORRECTDBFLOAT(g->MetalsEjectedMass);
+  o->MetalsICM = CORRECTDBFLOAT(g->MetalsICM);
 #ifdef METALS_SELF
   o->MetalsHotGasSelf = CORRECTDBFLOAT(g->MetalsHotGasSelf);
 #endif
-  /*
+#else
   o->MetalsColdGas = g->MetalsColdGas;
   o->MetalsDiskMass = g->MetalsDiskMass;
   o->MetalsBulgeMass = g->MetalsBulgeMass;
   o->MetalsHotGas = g->MetalsHotGas;
   o->MetalsEjectedMass = g->MetalsEjectedMass;
+  o->MetalsICM = g->MetalsICM;
 #ifdef METALS_SELF
   o->MetalsHotGasSelf = g->MetalsHotGasSelf;
-#endif */
+#endif
+#endif
+
 #ifdef TRACK_BURST
   o->BurstMass=g->BurstMass;
 #endif
@@ -305,48 +284,25 @@ void prepare_galaxy_for_output(int n, struct GALAXY *g, struct GALAXY_OUTPUT *o)
   o->sfh_ibin=g->sfh_ibin;
   ibin=0;
   for (j=0;j<=o->sfh_ibin;j++) {
-#ifndef NORMALIZEDDB
-  	 //o->sfh_time[j]=(g->sfh_t[j]+g->sfh_dt[j]/2.)*UnitTime_in_years/Hubble_h; //ROB: Lookback time to middle of SFH bin, in years //ROB: Now use LookBackTimeToSnap + sfh_time instead.
- 	  //o->sfh_time[j]=(g->sfh_t[j]+g->sfh_dt[j]/2.-NumToTime(g->SnapNum))*UnitTime_in_years/Hubble_h; //Time from middle of this sfh bin to snapshot - converted from code units to years
- 	  //o->sfh_dt[j]=g->sfh_dt[j]*UnitTime_in_years/Hubble_h;
  	  o->sfh_DiskMass[j]=g->sfh_DiskMass[j];
  	  o->sfh_BulgeMass[j]=g->sfh_BulgeMass[j];
  	  o->sfh_ICM[j]=g->sfh_ICM[j];
  	  o->sfh_MetalsDiskMass[j]=g->sfh_MetalsDiskMass[j];
  	  o->sfh_MetalsBulgeMass[j]=g->sfh_MetalsBulgeMass[j];
  	  o->sfh_MetalsICM[j]=g->sfh_MetalsICM[j];
-	  //#ifdef DETAILED_METALS_AND_MASS_RETURN
 #ifdef INDIVIDUAL_ELEMENTS
 	  o->sfh_ElementsDiskMass[j]=g->sfh_ElementsDiskMass[j];
 	  o->sfh_ElementsBulgeMass[j]=g->sfh_ElementsBulgeMass[j];
 	  o->sfh_ElementsICM[j]=g->sfh_ElementsICM[j];
 #endif
-	  //#endif
 #ifdef TRACK_BURST
 	  o->sfh_BurstMass[j]=g->sfh_BurstMass[j];
 #endif
-#else // NORMALIZEDDB
-	  sfh_bin[j].sfh_DiskMass = g->sfh_DiskMass[j];
-	  sfh_bin[j].sfh_BulgeMass = g->sfh_BulgeMass[j];
-	  sfh_bin[j].sfh_ICM = g->sfh_ICM[j];
-	  sfh_bin[j].sfh_MetalsDiskMass = g->sfh_MetalsDiskMass[j];
-	  sfh_bin[j].sfh_MetalsBulgeMass = g->sfh_MetalsBulgeMass[j];
-	  sfh_bin[j].sfh_MetalsICM = g->sfh_MetalsICM[j];
-	  sfh_bin[j].sfh_ibin = j;
-	  sfh_bin[j].snapnum = g->SnapNum;
-	  sfh_bin[j].GalID = g->GalTreeIndex; // TODO must be reset
-// DEBUG GL
-	  o->GalID = g->GalTreeIndex;
-// END DEBUG
-#endif // NORMALIZEDDB
    }
 
   //Set all non-used array elements to zero:
   // important if we want to read files in database that all values are valid SQLServer floats
   for (j=o->sfh_ibin+1;j<SFH_NBIN;j++) {
-#ifndef NORMALIZEDDB
-	  //o->sfh_time[j]=0.;
-	  //o->sfh_dt[j]=0.;
 	  o->sfh_DiskMass[j]=0.;
 	  o->sfh_BulgeMass[j]=0.;
 	  o->sfh_ICM[j]=0.;
@@ -361,33 +317,10 @@ void prepare_galaxy_for_output(int n, struct GALAXY *g, struct GALAXY_OUTPUT *o)
 #ifdef TRACK_BURST
 	  o->sfh_BurstMass[j]=0.;
 #endif
-#else
-	  sfh_bin[j].sfh_DiskMass=0;
-	  sfh_bin[j].sfh_BulgeMass=0;
-	  sfh_bin[j].sfh_ICM=0;
-	  sfh_bin[j].sfh_ibin = 0;
-	  sfh_bin[j].snapnum = g->SnapNum;
-	  // TODO other elements not important, are not being written anyway. Or are they used elsewhere?
-#endif
   }
 #endif //STAR_FORMATION_HISTORY
 
 #ifdef INDIVIDUAL_ELEMENTS
-  /*for (j=0;j<ELEMENT_NUM;j++)
-  {
-	  o->DiskMass_elements[j]=g->DiskMass_elements[j];
-	  o->BulgeMass_elements[j]=g->BulgeMass_elements[j];
-	  o->ColdGas_elements[j]=g->ColdGas_elements[j];
-	  o->HotGas_elements[j]=g->HotGas_elements[j];
-	  o->EjectedMass_elements[j]=g->EjectedMass_elements[j];
-	  o->ICM_elements[j]=g->ICM_elements[j];
-  }*/
-
-  /*o->DiskMass_elements = CORRECTDBFLOAT(g->DiskMass_elements);
-  o->BulgeMass_elements = CORRECTDBFLOAT(g->BulgeMass_elements);
-  o->ColdGas_elements = CORRECTDBFLOAT(g->ColdGas_elements);
-  o->HotGas_elements = CORRECTDBFLOAT(g->HotGas_elements);
-  o->ICM_elements = CORRECTDBFLOAT(g->ICM_elements);*/
   o->DiskMass_elements = g->DiskMass_elements;
   o->BulgeMass_elements = g->BulgeMass_elements;
   o->ColdGas_elements = g->ColdGas_elements;
@@ -396,108 +329,19 @@ void prepare_galaxy_for_output(int n, struct GALAXY *g, struct GALAXY_OUTPUT *o)
   o->ICM_elements = g->ICM_elements;
 #endif
 
-  o->PrimordialAccretionRate = CORRECTDBFLOAT(g->PrimordialAccretionRate * UnitMass_in_g / UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS);
-  o->CoolingRate = CORRECTDBFLOAT(g->CoolingRate * UnitMass_in_g / UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS);
-  o->CoolingRate_beforeAGN = CORRECTDBFLOAT(g->CoolingRate_beforeAGN * UnitMass_in_g / UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS);
+  o->PrimordialAccretionRate = CORRECTDBFLOAT(g->PrimordialAccretionRate * UNITMASS_IN_G / UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS);
+  o->CoolingRate = CORRECTDBFLOAT(g->CoolingRate * UNITMASS_IN_G / UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS);
+  o->CoolingRate_beforeAGN = CORRECTDBFLOAT(g->CoolingRate_beforeAGN * UNITMASS_IN_G / UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS);
 
  //NOTE: in Msun/yr
-#ifdef SAVE_MEMORY
-  o->Sfr = CORRECTDBFLOAT(g->Sfr * UnitMass_in_g / UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS);
-  o->SfrBulge = CORRECTDBFLOAT(g->SfrBulge * UnitMass_in_g / UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS);
-#else
-  o->Sfr = CORRECTDBFLOAT(g->Sfr[n] * UnitMass_in_g / UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS);
-  o->SfrBulge = CORRECTDBFLOAT(g->SfrBulge[n] * UnitMass_in_g / UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS);
-#endif 
-
-#endif //NO_PROPS_OUTPUTS
-
+  o->Sfr = CORRECTDBFLOAT(g->Sfr * UNITMASS_IN_G / UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS);
+  o->SfrBulge = CORRECTDBFLOAT(g->SfrBulge * UNITMASS_IN_G / UnitTime_in_s * SEC_PER_YEAR / SOLAR_MASS);
 
 //MAGNITUDES
 #ifdef COMPUTE_SPECPHOT_PROPERTIES
 #ifdef POST_PROCESS_MAGS
-
-  /*   int N_vespa_files=29, N_vespa_AgeBins=16;
-       double vespa_age[17]={0.000125893, 0.02000, 0.03000, 0.04800, 0.07400, 0.11500,
-                          0.17700, 0.27500, 0.42500, 0.65800, 1.02000, 1.57000,
-                          2.44000, 3.78000, 5.84000, 9.04000, 14.0000};
-       int vespa_sfh_IDs[29]={0,   1, 12, 16,  2, 22, 23, 27, 29, 36,
-       		               42, 44, 50, 53, 54, 55, 56, 57, 61, 62,
-       		               63, 64, 65, 71, 81, 82, 90, 94, 99};
-       double vespa_sfh[N_vespa_AgeBins], vespa_metal[N_vespa_AgeBins], dumb[6];
-       int ii, jj, kk;
-       char buf[1000], sbuf[1000];
-       FILE *fa;
-
-       for (ii=1;ii<N_vespa_files;ii++)
-        {
-
-       	sprintf(buf, "./devel/vespa_sfh/disc_good_%d.txt", vespa_sfh_IDs[ii]);
-       	if(!(fa = fopen(buf, "r")))
-       	{
-       		char sbuf[1000];
-       		sprintf(sbuf, "can't open file `%s'\n", buf);
-       		terminate(sbuf);
-       	}
-
-       	for(jj=0;jj<6;jj++)
-       		fgets(buf, 300, fa);
-
-       	//read vespa SFH and metallicities
-       	for (jj=0;jj<N_vespa_AgeBins;jj++)
-       	{
-       		vespa_sfh[jj]=0.;
-       		vespa_metal[jj]=0.;
-       		fscanf(fa,"%lg %lg %lg %lg %lg %lg %lg %lg\n", &dumb[0], &dumb[1], &vespa_sfh[jj], &dumb[2], &vespa_metal[jj],
-       			                                     &dumb[3], &dumb[4], &dumb[5]);
-       	}
-       	fclose(fa);
-
-       	for (jj=0;jj<SFH_NBIN;jj++)
-       	 {
-       		if(jj<N_vespa_AgeBins)
-       		{
-       			o->sfh_time[jj]=(vespa_age[jj]+vespa_age[jj+1])/2.*1.e9;
-       			o->sfh_dt[jj]=(vespa_age[jj+1]-vespa_age[jj])/2.*1.e9;
-       		  o->sfh_DiskMass[jj]=vespa_sfh[jj];
-       		  o->sfh_BulgeMass[jj]=0.;
-       		  o->sfh_MetalsDiskMass[jj]=vespa_metal[jj]*o->sfh_DiskMass[jj];
-       		  o->sfh_MetalsBulgeMass[jj]=metals_init();
-       		}
-       		else
-       		{
-       			o->sfh_time[jj]=0.;
-       			o->sfh_dt[jj]=0.;
-       			o->sfh_DiskMass[jj]=0.;
-       			o->sfh_BulgeMass[jj]=0.;
-       			o->sfh_MetalsDiskMass[jj]=metals_init();
-       			o->sfh_MetalsBulgeMass[jj]=metals_init();
-       		}
-       	 }
-
-        	post_process_spec_mags(o);
-
-        	sprintf(buf, "./devel/vespa_sfh/output_spectradisc_good_%d.txt", vespa_sfh_IDs[ii]);
-        	if(!(fa = fopen(buf, "w")))
-        	{
-        		char sbuf[1000];
-        		sprintf(sbuf, "can't open file `%s'\n", buf);
-        		terminate(sbuf);
-        	}
-
-        	for(jj=0;jj<NMAG;jj++)
-        		fprintf(fa,"%e\n",o->Mag[jj]);
-        	fclose(fa);
-
-         exit(0);
-       }
-  */
-      //Convert recorded star formation histories into mags
-#ifdef NORMALIZEDDB
-    post_process_spec_mags(o, &(sfh_bin[0]));
-#else
+    //Convert recorded star formation histories into mags
     post_process_spec_mags(o);
-#endif
-
 #else //ndef POST_PROCESS_MAGS
 
 #ifdef OUTPUT_REST_MAGS
@@ -519,19 +363,19 @@ void prepare_galaxy_for_output(int n, struct GALAXY *g, struct GALAXY_OUTPUT *o)
   // Luminosities in various bands
   for(j = 0; j < NMAG; j++)
     {
-	  o->ObsMag[j] = lum_to_mag(g->ObsLum[j][n]);
-	  o->ObsMagBulge[j] = lum_to_mag(g->ObsLumBulge[j][n]);
-	  o->ObsMagDust[j] = lum_to_mag(g->ObsLumDust[j][n]);
+      o->ObsMag[j] = lum_to_mag(g->ObsLum[j][n]);
+      o->ObsMagBulge[j] = lum_to_mag(g->ObsLumBulge[j][n]);
+      o->ObsMagDust[j] = lum_to_mag(g->ObsLumDust[j][n]);
 #ifdef ICL
-	  o->ObsMagICL[j] = lum_to_mag(g->ObsICL[j][n]);
+      o->ObsMagICL[j] = lum_to_mag(g->ObsICL[j][n]);
 #endif
 
 #ifdef OUTPUT_MOMAF_INPUTS
-	  o->dObsMag[j] = lum_to_mag(g->dObsLum[j][n]);
-	  o->dObsMagBulge[j] = lum_to_mag(g->dObsLumBulge[j][n]);
-	  o->dObsMagDust[j] = lum_to_mag(g->dObsLumDust[j][n]);
+      o->dObsMag[j] = lum_to_mag(g->dObsLum[j][n]);
+      o->dObsMagBulge[j] = lum_to_mag(g->dObsLumBulge[j][n]);
+      o->dObsMagDust[j] = lum_to_mag(g->dObsLumDust[j][n]);
 #ifdef ICL
-	  o->dObsMagICL[j] = lum_to_mag(g->dObsICL[j][n]);
+      o->dObsMagICL[j] = lum_to_mag(g->dObsICL[j][n]);
 #endif
 #endif
     }
@@ -540,15 +384,13 @@ void prepare_galaxy_for_output(int n, struct GALAXY *g, struct GALAXY_OUTPUT *o)
 #endif //ndef POST_PROCESS_MAGS
 #endif //COMPUTE_SPECPHOT_PROPERTIES
 
-#ifndef NO_PROPS_OUTPUTS
   if((g->DiskMass+g->BulgeMass)> 0.0)
-      {
-  	  o->MassWeightAge = g->MassWeightAge[n] / (g->DiskMass+g->BulgeMass);
-  	  o->MassWeightAge = o->MassWeightAge / 1000. * UnitTime_in_Megayears / Hubble_h;	//Age in Gyr
-      }
-    else
-  	o->MassWeightAge = 0.;
-#endif
+    {
+      o->MassWeightAge = g->MassWeightAge[n] / (g->DiskMass+g->BulgeMass);
+      o->MassWeightAge = o->MassWeightAge / 1000. * UnitTime_in_Megayears / Hubble_h;	//Age in Gyr
+    }
+  else
+    o->MassWeightAge = 0.;
 
 #ifdef FIX_OUTPUT_UNITS
   fix_units_for_ouput(o);
@@ -558,7 +400,6 @@ void prepare_galaxy_for_output(int n, struct GALAXY *g, struct GALAXY_OUTPUT *o)
 
 
 #ifdef FIX_OUTPUT_UNITS
-#ifndef NO_PROPS_OUTPUTS
 
 #ifdef LIGHT_OUTPUT
 /**@brief Removes h from units of galaxy properties. If desired (makefile option
@@ -652,14 +493,12 @@ void fix_units_for_ouput(struct GALAXY_OUTPUT *o)
 }
 #endif // NO Light_Output
 
-#endif //NO_PROPS_OUTPUTS
 #endif // FIX_OUTPUT_UNITS
 
 long long calc_big_db_offset(int filenr, int treenr)
 {
   long long big;
 #ifdef MRII
-  // TODO assumes < 10^9 galaxies per tree, is that always correct?
   big = (((filenr * (long long) 1000000) + treenr) * (long long) 1000000000);
 #else
   big = (((filenr * (long long) 1000000) + treenr) * (long long) 1000000);
@@ -683,69 +522,47 @@ long long calc_big_db_subid_index(int snapnum, int filenr, int subhaloindex)
 #ifdef STAR_FORMATION_HISTORY
 void write_sfh_bins()
 {
-	FILE* SFH_Bins_File;
-	struct SFH_Time *sfh_times;
-	char buf[1000];
-
-	/*sprintf(buf, "%s/SFH_Bins.csv", FinalOutputDir);
-	if(!(SFH_Bins_File = fopen(buf, "w")))
-	{
-	  char sbuf[1000];
-	  sprintf(sbuf, "can't open file `%s'\n", buf);
-	  terminate(sbuf);
-	} else
-	  printf("writing sfh bins to %s\n", buf);*/
-
+  FILE* SFH_Bins_File;
+  struct SFH_Time *sfh_times;
+  char buf[1000];
 
   int snap,j, nbins,ibin;
   nbins = 0;
   for(snap = 0; snap < MAXSNAPS; snap++)
-  {
-	  for(j=0;j < SFH_ibin[snap][0];j++)
-	  {
-		  nbins++;
-		  // TODO writing as CSV is temporary test for checking output in binary
-		  //[snap][0][j] - 0 is the step
-		 /* fprintf(SFH_Bins_File,"%d,%d,%f,%f,%f,%f,%d,%d\r\n",
-     			snap,j,SFH_t[snap][0][j],SFH_dt[snap][0][j],
-     	 	    (SFH_t[snap][0][j]+SFH_dt[snap][0][j]/2.-NumToTime(snap))*UnitTime_in_years/Hubble_h,
-     	 	    SFH_dt[snap][0][j]*UnitTime_in_years/Hubble_h,
-     			SFH_Nbins[snap][0][j],SFH_ibin[snap][0]);*/
-	  }
-  }
-  //fflush(SFH_Bins_File);
- // fclose(SFH_Bins_File);
+    for(j=0;j < SFH_ibin[snap][0];j++)
+      nbins++;
+
 
   sfh_times = (struct SFH_Time *) mymalloc("sfh_times", sizeof(struct SFH_Time) * nbins);
   ibin = 0;
   for(snap = 0; snap < MAXSNAPS; snap++)
-  {
-	  for(j=0;j < SFH_ibin[snap][0];j++)
-	  {
-		  sfh_times[ibin].snapnum = snap;
-		  sfh_times[ibin].bin = j;
-		  sfh_times[ibin].lookbacktime = (SFH_t[snap][0][j]+SFH_dt[snap][0][j]/2.-NumToTime(snap))*UnitTime_in_years/Hubble_h;
-		  sfh_times[ibin].dt=SFH_dt[snap][0][j]*UnitTime_in_years/Hubble_h;
-		  sfh_times[ibin].nbins = SFH_Nbins[snap][0][j];
-		  ibin++;
-	  }
-  }
-	sprintf(buf, "%s/SFH_Bins", FinalOutputDir);
-	if(!(SFH_Bins_File = fopen(buf, "w")))
+    {
+      for(j=0;j < SFH_ibin[snap][0];j++)
 	{
-	  char sbuf[1000];
-	  sprintf(sbuf, "can't open file `%s'\n", buf);
-	  terminate(sbuf);
-	} else
-	  printf("writing sfh bins to %s\n", buf);
+	  sfh_times[ibin].snapnum = snap;
+	  sfh_times[ibin].bin = j;
+	  sfh_times[ibin].lookbacktime = (SFH_t[snap][0][j]+SFH_dt[snap][0][j]/2.-NumToTime(snap))*UnitTime_in_years/Hubble_h;
+	  sfh_times[ibin].dt=SFH_dt[snap][0][j]*UnitTime_in_years/Hubble_h;
+	  sfh_times[ibin].nbins = SFH_Nbins[snap][0][j];
+	  ibin++;
+	}
+    }
 
-	// write # bins
-    myfwrite(&nbins, sizeof(int), 1, SFH_Bins_File);	// write 1
-	// skip header
-	myfseek(SFH_Bins_File, sizeof(struct SFH_Time), SEEK_SET);
-    myfwrite(sfh_times, sizeof(struct SFH_Time), nbins, SFH_Bins_File);	// size of an output structure (Galaxy_Output)
-    fflush(SFH_Bins_File);
-    fclose(SFH_Bins_File);
+  sprintf(buf, "%s/SFH_Bins", FinalOutputDir);
+  if(!(SFH_Bins_File = fopen(buf, "w")))
+    {
+      char sbuf[1000];
+      sprintf(sbuf, "can't open file `%s'\n", buf);
+      terminate(sbuf);
+    }
+  else
+      printf("writing sfh bins to %s\n", buf);
+
+  // write # bins
+  myfwrite(&nbins, sizeof(int), 1, SFH_Bins_File);	// write 1
+  myfwrite(sfh_times, sizeof(struct SFH_Time), nbins, SFH_Bins_File);	// size of an output structure (Galaxy_Output)
+  fflush(SFH_Bins_File);
+  fclose(SFH_Bins_File);
 
 
 }

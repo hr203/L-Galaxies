@@ -6,11 +6,7 @@
 void SAM(int filenr);
 #endif
 void construct_galaxies(int filenr, int tree, int halonr);
-#ifdef MERGE01
 int join_galaxies_of_progenitors(int halonr, int ngalstart, int *cenngal);
-#else
-int join_galaxies_of_progenitors(int halonr, int ngalstart);
-#endif
 void evolve_galaxies(int halonr, int ngal, int tree, int cenngal);
 
 size_t myfread(void *ptr, size_t size, size_t nmemb, FILE * stream);
@@ -74,11 +70,6 @@ double func_c(double c);
 double dgrowth_factor_dt(double a, double omega_m, double omega_l);
 double scale_v_cen(int snapnum);
 
-#ifndef MCMC
-void re_set_parameters(int snapnum);
-#endif
-
-
 long long calc_big_db_offset(int filenr, int treenr);
 void prepare_galaxy_tree_info_for_output(int filenr, int tree, struct galaxy_tree_data *g,
 					 struct GALAXY_OUTPUT *o);
@@ -90,13 +81,7 @@ void load_tree_table(int filenr);
 void load_tree(int nr);
 void save_galaxies(int filenr, int tree);
 int save_galaxy_tree_compare(const void *a, const void *b);
-
-#ifdef NORMALIZEDDB
-void prepare_galaxy_for_output(int n, struct GALAXY *g, struct GALAXY_OUTPUT *o, struct SFH_BIN *sfh_bin);
-#else
 void prepare_galaxy_for_output(int n, struct GALAXY *g, struct GALAXY_OUTPUT *o);
-#endif
-
 void fix_units_for_ouput(struct GALAXY_OUTPUT *o);
 
 void free_galaxies_and_tree(void);
@@ -114,10 +99,11 @@ void assign_files_to_tasks(int *FileToProcess, int *TaskToProcess, int ThisTask,
 
 void starformation(int p, int centralgal, double time, double dt, int nstep);
 void update_stars_due_to_reheat(int p, int centralgal, double *stars);
+void update_from_star_formation(int p, double stars, bool flag_burst, int nstep);
 void SN_feedback(int p, int centralgal, double stars, char feedback_location[]);
-#ifdef AGNFB
-void SN_feedback(int p, int centralgal, double stars, char feedback_location[]);
-#endif
+void update_from_feedback(int p, int centralgal, double reheated_mass, double ejected_mass);
+void update_massweightage(int p, double stars, double time);
+
 void add_galaxies_together(int t, int p);
 void init_galaxy(int p, int halonr);
 double infall_recipe(int centralgal, int ngal, double Zcurr);
@@ -129,8 +115,7 @@ void reincorporate_gas(int p, double dt);
 void deal_with_galaxy_merger(int p, int merger_centralgal, int centralgal, double time, double deltaT, int nstep);
 double do_reionization(float Mvir, double Zcurr);
 double NumToTime(int snapnum);
-void update_from_star_formation(int p, double stars, bool flag_burst, int nstep);
-void update_massweightage(int p, double stars, double time);
+
 
 
 //MATH MISC
@@ -176,11 +161,7 @@ void find_interpolated_lum(double timenow, double timetarget, double metallicity
 			                     double *f1, double *f2,  double *fmet1, double *fmet2);
 
 #ifdef POST_PROCESS_MAGS
-#ifdef NORMALIZEDDB
-void post_process_spec_mags(struct GALAXY_OUTPUT *o, struct SFH_BIN *sfh_bin);
-#else
 void post_process_spec_mags(struct GALAXY_OUTPUT *o);
-#endif
 void compute_post_process_lum (double mass, double age, double metals, int snap, int nlum, double *Lum, double *ObsLum,
 		                           double *dObsLum,double *dObsLum_forward,
 		                           double *YLum, double *ObsYLum, double *dObsYLum, double *dObsYLum_forward);
@@ -189,7 +170,7 @@ void dust_correction_for_post_processing(int nlum, int snap, double Zg, double C
 								                         double YLumDisk, double ObsYLumDisk, double dObsYLumDisk, double dObsYLumDisk_forward,
 								                         double *LumDiskDust, double *ObsLumDiskDust, double *dObsLumDiskDust, double *dObsLumDiskDust_forward);
 #else
-void add_to_luminosities(int p, double mstars, double time, double metallicity);
+void add_to_luminosities(int p, double mstars, double time, double dt, double metallicity);
 void dust_model(int p, int snap, int halonr);
 #endif
 
@@ -203,7 +184,7 @@ double get_extinction(int mag, double Zg, double redshift);
 
 
 
-void update_from_feedback(int p, int centralgal, double reheated_mass, double ejected_mass);
+
 double estimate_merging_time(int halonr, int mostmassive, int p);
 
 double hubble_of_z(int halonr);
@@ -211,14 +192,6 @@ double get_virial_velocity(int halonr);
 double get_virial_radius(int halonr);
 double get_virial_mass(int halonr);
 double collisional_starburst_recipe(double mass_ratio, int merger_centralgal, int centralgal, double time, double deltaT);
-
-/*de lucia's */
-//void construct_galaxies(int halonr);
-//void update_from_feedback(int p, int centralgal, double reheated_mass, double ejected_mass,double metallicity);
-//double estimate_merging_time(int halonr, int mostmassive);
-
-//********************************************************
-//*******************************************************
 
 void make_bulge_from_burst(int p);
 void grow_black_hole(int merger_centralgal, double mass_ratio, double deltaT);
@@ -249,26 +222,8 @@ void find_interpolate_reionization(double zcurr, int *tabindex, double *f1, doub
 void init_jump_index(void);
 int get_jump_index(double age);
 
-void disrupt(int p, int centralgal);
+void disrupt(int p);
 double peri_radius(int p, int centralgal);
-
-
-#ifdef HT09_DISRUPTION
-double get_merging_radius(int halonr, int mother_halonr, int p);
-double get_deltar(int galID, double deltaT, int centralgal);
-void disruption_code (int galID, double time, int centralgal);
-double disruption_radius(int p, int centralgal);
-float erff(float x);
-#ifndef MCMC
-float gammp (float a, float x);
-float gammq (float a, float x);
-float gser (float a, float x);
-float gcf(float a, float x);
-float gammln(float xx);
-float gammpapprox(float a, float x, int psig);
-#endif
-void sub_to_luminosities(int p, float RemainFract);
-#endif
 
 
 double hot_retain_sat(int i, int centralgal);
@@ -284,15 +239,6 @@ double diskmass(double x);
 double bulgemass(double x);
 double sat_radius(int p);
 
-
-#ifdef H2FORMATION
-
-/*for H2 Formation*/
-void read_sfrz(void);
-double cal_H2(int p);
-void find_interpolate_h2(double metalicity, double rho, int *tabindex, int *metindex, double *f1, double *f2,double *fmet1, double *fmet2);
-#endif
-
 void update_type_2(int ngal,int halonr, int prog,int mostmassive);
 void update_centralgal(int ngal,int halonr);
 void update_hotgas(int ngal,int centralgal);
@@ -303,15 +249,11 @@ double separation_halo(int p, int q);
 
 
 /* check funs */
-void  checkbulgesize_main(int ngal);
 void update_hot_frac(int p, double reincorporated, float HotGas);
-#ifdef MERGE01
 int set_merger_center(int fofhalo);
-#endif
 
 void transfer_stars(int p, char cp[], int q, char cq[], double fraction);
 void transfer_gas(int p, char cp[], int q, char cq[], double fraction, char call_function[], int line);
-void transfer_gas_to_stars(int p, char cp[], int q, char cq[], double fraction);
 void deal_with_satellites(int centralgal, int ngal);
 void mass_checks(char string[], int igal) ;
 
@@ -325,7 +267,7 @@ void write_sfh_bins();
 #endif //STAR_FORMATION_HISTORY
 
 #ifdef DETAILED_METALS_AND_MASS_RETURN
-struct metals metals_add(struct metals m1, 
+struct metals metals_add(struct metals m1,
 	       struct metals m2,
 	       float fraction);
 struct metals metals_init();
@@ -349,16 +291,6 @@ double Chabrier_IMF(double M);
 #ifdef INDIVIDUAL_ELEMENTS
 void SNe_rates();
 #endif
-/*int find_initial_metallicity_comp2(int Zi, int sfh_bin, int table_type);
-int find_initial_mass2(double lifetime, int Zi_bin);
-int max_Mi_lower2(int Mi_lower, int channel_type);
-int min_Mi_upper2(int Mi_upper, int channel_type);
-int find_SNII_mass_bin2(double masslimit);*/
-/*int find_agb_mass_bin(double masslimit);
-#ifdef DTD
-double DTDcalc (double timevalue);
-#endif*/
-//void find_actual_ejecta_limits2(int channel_type, double Mi_lower_actual, double Mi_upper_actual, int Mi_lower, int Mi_upper, int Zi,  double* EjectedMasses_lower_actual, double* EjectedMasses_upper_actual, double* TotalMetals_lower_actual, double* TotalMetals_upper_actual, double* Yields_lower_actual, double* Yields_upper_actual);
 
 //in yield_integrals.c:
 void init_integrated_yields();
@@ -402,3 +334,6 @@ void reset_ejection_rates(int i, int sfh_ibin,
 #endif
 
 #endif //DETAILED_METALS_AND_MASS_RETURN
+
+void print_galaxy(char string[], int p, int halonr);
+

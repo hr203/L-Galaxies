@@ -1,10 +1,5 @@
-// TODO add description for all variables that do not have one yet
+
 #include "allvars.h"
-
-#ifdef ALL_SKY_LIGHTCONE
-struct dist_table *TimeTable, *DistanceTable;
-#endif
-
 
 
 struct GALAXY			/* Galaxy data */
@@ -16,7 +11,6 @@ struct halo_aux_data		/* auxiliary halo data */
  *HaloAux;
 
 struct halo_ids_data *HaloIDs, *HaloIDs_Data;
-
 
 int FirstFile;			/* first and last file for processing */
 int LastFile;
@@ -40,7 +34,6 @@ char SpecPhotIMF[50];
 char McFile[512];
 char FileWithFilterNames[512];
 char CoolFunctionsDir[512];
-char CosmologyTablesDir[512];
 char OutputDir[512];
 char FinalOutputDir[512];
 char FileNameGalaxies[512];
@@ -93,14 +86,9 @@ int ThisTask, NTask;
 int GalCount;
 int TotGalCount;
 struct galaxy_tree_data *GalTree;
-#ifdef NORMALIZEDDB
-int TotGalSFHBinCount;
-#endif
 #endif
 
 size_t HighMark;
-
-
 
 
 /* cosmological parameters */
@@ -131,19 +119,19 @@ double BoxSize_OriginalCosm_MRII;
 
 
 /* flags */
-int StarFormationRecipe;
-int FeedbackRecipe;
-int EjectionRecipe;
-int ReIncorporationRecipe;
-int ReionizationOn;
-int BlackHoleGrowth;
+int ReionizationModel;
+int DiskRadiusModel;
+int StarFormationModel;
+int FeedbackReheatingModel;
+int FeedbackEjectionModel;
+int FateOfSatellitesGas;
+int ReIncorporationModel;
 int AGNRadioModeModel;
-int DiskRadiusMethod;
-int TrackDiskInstability;
-int BlackHoleGrowthInDiskInstability;
+int DiskInstabilityModel;
+int BHGrowthInDiskInstabilityModel;
 int HotGasStripingModel;
-int HotGasOnType2Galaxies;
-int StarBurstRecipe;
+int DisruptionModel;
+int StarBurstModel;
 int BulgeFormationInMinorMergersOn;
 int MetallicityOption;
 
@@ -151,10 +139,7 @@ int MetallicityOption;
 double Reionization_z0;
 double Reionization_zr;
 double RamPressureStrip_CutOffMass;
-double RamPressureRadiusThreshold;
 double SfrEfficiency;
-double SfrLawPivotVelocity;
-double SfrLawSlope;
 double SfrColdCrit;
 double SfrBurstEfficiency;
 double SfrBurstSlope;
@@ -164,9 +149,7 @@ double ThreshMajorMerger;
 double MergerTimeMultiplier;
 double AgnEfficiency;
 double BlackHoleGrowthRate;
-double BlackHoleDisruptGrowthRate;
 double BlackHoleSeedMass;
-double BlackHoleAccretionRate;
 double BlackHoleCutoffVelocity;
 double FeedbackReheatingEpsilon;
 double ReheatPreVelocity;
@@ -175,30 +158,19 @@ double FeedbackEjectionEfficiency;
 double EjectPreVelocity;
 double EjectSlope;
 double ReIncorporationFactor;
-double ReincZpower;
-double ReincVelocitypower;
-double FracZtoHot;
-#ifdef FEEDBACK_COUPLED_WITH_MASS_RETURN
 double EnergySNcode, EnergySN;
-double EnergySNIIcode, EnergySNII;
-double EnergySNIacode, EnergySNIa;
-double EnergyAGBcode, EnergyAGB;
-#else
-double EnergySNcode, EnergySN;
-#endif
 double EtaSNcode, EtaSN;
 
-double UnitLength_in_cm,
-  UnitTime_in_s,
-  UnitVelocity_in_cm_per_s,
-  UnitMass_in_g,
-  RhoCrit,
+double UnitTime_in_s,
   UnitPressure_in_cgs,
   UnitDensity_in_cgs,
   UnitCoolingRate_in_cgs,
   UnitEnergy_in_cgs,
   UnitTime_in_Megayears,
   UnitTime_in_years,
+#ifdef HALOMODEL
+  RhoCrit,
+#endif
   G,
   Hubble,
   a0, ar;
@@ -273,12 +245,6 @@ size_t offset_auxdata, offset_treedata, offset_dbids;
 size_t offset_galaxydata, maxstorage_galaxydata, filled_galaxydata;
 size_t offset_galsnapdata[NOUT], maxstorage_galsnapdata[NOUT], filled_galsnapdata[NOUT];
 #endif
-
-
-/*H2 formation table */
-
-float Rho[RHO_LEN];
-float H2[RHO_LEN][Z_LEN];
 
 /* reionization Okamoto et al. 2008*/
 float Reion_z[46],Reion_Mc[46];

@@ -17,7 +17,7 @@
 #include "proto.h"
 
 #ifdef DETAILED_METALS_AND_MASS_RETURN
-
+#ifdef INDIVIDUAL_ELEMENTS
 void SNe_rates()
 {
 	double previoustime, newtime, deltaT;
@@ -704,5 +704,5 @@ double DTDcalc2 (double timevalue)
 }*/
 
 #endif //#ifdef DETAILED_METALS_AND_MASS_RETURN
-
+#endif //INDIVIDUAL_ELEMENTS
 

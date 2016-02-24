@@ -7,8 +7,8 @@
 #include "allvars.h"
 #include "proto.h"
 
-/** @file recipe_dust.c
- *  @brief recipe_dust.c is used to compute dust extinction as described
+/** @file model_dust.c
+ *  @brief model_dust.c is used to compute dust extinction as described
  *         in Delucia2007 + redshift dependence as Kitzbichler & White 2007.
 
  *  There are 2 extinction sources:
@@ -65,7 +65,6 @@ void dust_model(int p, int snap, int halonr)
       nh = nh / 3252.37;	// 3252.37 = 10^(3.5122) ... ha ha ! 
 
       /*redshift dependence */
-     // nh = nh * pow(1 + ZZ[Halo[halonr].SnapNum], -0.4);
       nh = nh * pow(1 + ZZ[Halo[halonr].SnapNum], -1.0);
 
 
@@ -82,7 +81,7 @@ void dust_model(int p, int snap, int halonr)
        * and width 0.2 (MUWIDTH), truncated at 0.1 and 1.  */
       mu = -1.;
       while (mu < 0) 
-        {
+	{
     	  mu = gasdev(&mu_seed) * MUWIDTH + MUCENTER;
     	  if(mu < 0.1 || mu > 1.0)
     		mu = -1.;
@@ -257,40 +256,40 @@ double get_extinction(int mag, double Zg, double redshift)
   b=0.0;
 
   if(x<=1.1)
-  {
-  	a=a_IR*pow(x,1.61f);
-  	b=b_IR*pow(x,1.61f);
-  	//a=a_IR*pow(x,-1.14f);
-  	//b=b_IR*pow(x,-1.14f);
-  }
+    {
+      a=a_IR*pow(x,1.61f);
+      b=b_IR*pow(x,1.61f);
+      //a=a_IR*pow(x,-1.14f);
+      //b=b_IR*pow(x,-1.14f);
+    }
   else if(x>=1.1 && x<=3.3)
-  {
-  	y=x-1.82;
-  	x=y;
-  	a=1.;
-  	b=0.;
-  	for(k=0;k<7;k++)
-  	{
-  		a+=a_opt[k]*y;
+    {
+      y=x-1.82;
+      x=y;
+      a=1.;
+      b=0.;
+      for(k=0;k<7;k++)
+	{
+	  a+=a_opt[k]*y;
   	  b+=b_opt[k]*y;
   	  y*=x;
-  	}
-  }
+	}
+    }
   else if(x>=3.3 && x<= 8.0)
-  {
-  	a=a_UV[0]+a_UV[1]*x+a_UV[2]/((x+a_UV[3])*(x+a_UV[3])+a_UV[4]);
-  	b=b_UV[0]+b_UV[1]*x+b_UV[2]/((x+b_UV[3])*(x+b_UV[3])+b_UV[4]);
-  }
+    {
+      a=a_UV[0]+a_UV[1]*x+a_UV[2]/((x+a_UV[3])*(x+a_UV[3])+a_UV[4]);
+      b=b_UV[0]+b_UV[1]*x+b_UV[2]/((x+b_UV[3])*(x+b_UV[3])+b_UV[4]);
+    }
   else if(x>=8.0 && x<=10.0)
-  {
-  	a=1.0;
-  	b=13.415;
-  }
+    {
+      a=1.0;
+      b=13.415;
+    }
   else if(x>=10.0)
-  {
-  	a=1.0;
-  	b=16.732;
-  }
+    {
+      a=1.0;
+      b=16.732;
+    }
 
   A_Av=(a+b/R_V);
 

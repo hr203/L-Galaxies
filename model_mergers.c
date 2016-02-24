@@ -8,14 +8,14 @@
 #include "allvars.h"
 #include "proto.h"
 
-/** @file recipe_mergers.c
+/** @file model_mergers.c
  *  @brief Calculates the merging time, the central galaxy (for type 1's),
  *         adds galaxies together, calculates SF from bursts and grows
  *         black holes.
  *
  *
  *       <B>set_merger_center</B> - calculates the central galaxy for type 1's,
- *       since if MERGE01=1 (makefile) type 1's can also merge. Therefore,
+ *       since type 1's can also merge. Therefore,
  *       they need a merger central galaxy and will also have a merger clock
  *       (needed for millennium two, since due to the high resolution, haloes
  *       are very difficult to disrupt and orbit around forever).
@@ -36,7 +36,7 @@
  *       the galaxy position. Instead a clock is set, giving the time left until
  *       the satellite mergers with the central galaxy. Before, this was only
  *       done for type 2's (satellites that lost a halo). Guo2010 included the
- *       MERGE01 option, that sets the clock also for type 1's (satellites with
+ *       option to set the clock also for type 1's (satellites with
  *       a halo), since for the highest resolution millennium 2, their haloes
  *       can be very small and orbit forever around the central companion.\n
  *       This time is computed using the Chandrasekhar's formula for dynamical
@@ -74,7 +74,7 @@
  *           {1+(280\,\mathrm{km\,s}^{-1}/V_{\rm vir})^2}.\f$
 
  *       - Finally the burst of star formation due to the merger is treated.
- *           - If StarBurstRecipe = 0 (since Croton2006), the Somerville 2001
+ *           - If StarBurstModel = 0 (since Croton2006), the Somerville 2001
  *           model of bursts is used collisional_starburst_recipe(). The burst
  *           can happen for both major and minor mergers, with a fraction of
  *           the added cold gas from the satellite and central being consumed:
@@ -91,11 +91,11 @@
  *          C\frac{GM^2_1}{R_1}+C\frac{GM^2_2}{R_2}+\alpha_{\rm{inter}}
  *          \frac{GM_1M_2}{R_1+R_2}\f$*/
 
-/** @brief Calculates the central galaxies for type 1's (needed if MERGE01=1). */
+/** @brief Calculates the central galaxies for type 1's. */
 
 int set_merger_center(int fofhalo)
 {
-  /** @brief If MERGE01=1 (Guo2010), get id of central galaxy, since type 1's
+  /** @brief Get id of central galaxy, since type 1's
    *         can have their merger clock started before they become type 2's
    *         if M_star>M_vir. Introduced for millennium 2, where they can have
    *         very small masses, still be followed and never merge. At this
@@ -112,56 +112,56 @@ int set_merger_center(int fofhalo)
   //loop on all the haloes in current FOF group - to find a merger centre
   while(halonr >= 0)
   {
-	  lenmax = 0;
-	  first_occupied = Halo[halonr].FirstProgenitor;
-	  prog = Halo[halonr].FirstProgenitor;
+      lenmax = 0;
+      first_occupied = Halo[halonr].FirstProgenitor;
+      prog = Halo[halonr].FirstProgenitor;
 
-	  /* If the main progenitor of the current halo had no galaxies,
-	   * set first_occupied to the most massive progenitor. */
-	  if(prog >= 0)
-	    {
-	      	  if(HaloAux[prog].NGalaxies == 0)
-	      		  while(prog >= 0)
-	      		  {
-	      			for(i = 0, currentgal = HaloAux[prog].FirstGalaxy; i < HaloAux[prog].NGalaxies; i++)
-	      			  {
-	      				type = HaloGal[currentgal].Type;
+      /* If the main progenitor of the current halo had no galaxies,
+       * set first_occupied to the most massive progenitor. */
+      if(prog >= 0)
+	{
+	  if(HaloAux[prog].NGalaxies == 0)
+	    while(prog >= 0)
+	      {
+		for(i = 0, currentgal = HaloAux[prog].FirstGalaxy; i < HaloAux[prog].NGalaxies; i++)
+		  {
+		    type = HaloGal[currentgal].Type;
 
-	      				if(type == 0 || type == 1)
-	      				  {
-	      					if(Halo[prog].Len > lenmax)
-	      					  {
-	      						lenmax = Halo[prog].Len;
-	      						first_occupied = prog;
-	      					  }
-	      				  }
-	      				currentgal = HaloGal[currentgal].NextGalaxy;
-	      			  }
-	      			prog = Halo[prog].NextProgenitor;
-	      		  }
-	    }
+		    if(type == 0 || type == 1)
+		      {
+			if(Halo[prog].Len > lenmax)
+			  {
+			    lenmax = Halo[prog].Len;
+			    first_occupied = prog;
+			  }
+		      }
+		    currentgal = HaloGal[currentgal].NextGalaxy;
+		  }
+		prog = Halo[prog].NextProgenitor;
+	      }
+	}
 
       prog = Halo[halonr].FirstProgenitor;
 
       while(prog >= 0)//loop over all the progenitors
-      {
+	{
     	  for(i = 0, currentgal = HaloAux[prog].FirstGalaxy; i < HaloAux[prog].NGalaxies; i++)//loop over all the galaxies in a given progenitor
-    	  {
-    		  type = HaloGal[currentgal].Type;
+    	    {
+    	      type = HaloGal[currentgal].Type;
 
-    		  if(type == 0 || type == 1) // the galaxy is a type 0 or 1?
-    			  if(prog == first_occupied) //is the main progenitor?
-    				  if(halonr == Halo[halonr].FirstHaloInFOFgroup) //is the main halo?
-    					  return currentgal;
-    		  currentgal = HaloGal[currentgal].NextGalaxy;
-    	  }
+    	      if(type == 0 || type == 1) // the galaxy is a type 0 or 1?
+    		if(prog == first_occupied) //is the main progenitor?
+    		  if(halonr == Halo[halonr].FirstHaloInFOFgroup) //is the main halo?
+    		    return currentgal;
+    	      currentgal = HaloGal[currentgal].NextGalaxy;
+    	    }
     	  prog = Halo[prog].NextProgenitor;
-      }
+	}
 
       //if the halo has no galaxies, return 0
       if(i == 0)
-    	  if(Halo[halonr].FirstHaloInFOFgroup == halonr)
-    		  return i;
+	if(Halo[halonr].FirstHaloInFOFgroup == halonr)
+	  return i;
 
       halonr = Halo[halonr].NextHaloInFOFgroup;
   }
@@ -240,7 +240,7 @@ void deal_with_galaxy_merger(int p, int merger_centralgal, int centralgal, doubl
  *         one, form a bulge at the central galaxy with the stars from the
  *         satellite in a minor merger if BulgeFormationInMinorMergersOn=1.
  *         Grows black hole through accretion from cold gas "quasar mode".
- *         If StarBurstRecipe = 0, the Somerville 2001 model
+ *         If StarBurstModel = 0, the Somerville 2001 model
  *         of bursts is used, SN Feedback from starformation is computed and
  *         the sizes of bulge and disk followed. When a major merger occurs,
  *         the disk of both merging galaxies is completely destroyed to form
@@ -326,28 +326,29 @@ void deal_with_galaxy_merger(int p, int merger_centralgal, int centralgal, doubl
 
   /* grow black hole through accretion from cold disk during mergers, as in
    * Kauffmann & Haehnelt (2000) + minor mergers - Quasar Mode */
-  if(AGNRadioModeModel > 0)
+  if(AGNRadioModeModel != 5)
     grow_black_hole(merger_centralgal, mass_ratio, deltaT);
 
   mass_checks("deal_with_galaxy_merger #3",p);
   mass_checks("deal_with_galaxy_merger #3",merger_centralgal);
   mass_checks("deal_with_galaxy_merger #3",centralgal);
 
-  if (StarBurstRecipe == 0) {
+  if (StarBurstModel == 0)
+    {
     /* Starburst as in Somerville 2001, with feedback computed inside. */
   	/* All star formation happens in the disk, but in a major merger this will then
   	 * be destroyed with everything moved to the bulge. */
-    frac=collisional_starburst_recipe(mass_ratio, merger_centralgal, centralgal, time, deltaT);
-    bulgesize_from_merger(mass_ratio,merger_centralgal,p,Mcstar,Mcbulge,Mcgas,
-			  Mpstar,Mpbulge,Mpgas,frac);
+      frac=collisional_starburst_recipe(mass_ratio, merger_centralgal, centralgal, time, deltaT);
+      bulgesize_from_merger(mass_ratio,merger_centralgal,p,
+			    Mcstar, Mcbulge, Mcgas, Mpstar, Mpbulge, Mpgas, frac);
 
-    mass_checks("deal_with_galaxy_merger #3.5",p);
-    mass_checks("deal_with_galaxy_merger #3.5",merger_centralgal);
-    mass_checks("deal_with_galaxy_merger #3.5",centralgal);
+      mass_checks("deal_with_galaxy_merger #3.5",p);
+      mass_checks("deal_with_galaxy_merger #3.5",merger_centralgal);
+      mass_checks("deal_with_galaxy_merger #3.5",centralgal);
 
-    if(mass_ratio > ThreshMajorMerger)
-      make_bulge_from_burst(merger_centralgal);
-  }
+      if(mass_ratio > ThreshMajorMerger)
+	make_bulge_from_burst(merger_centralgal);
+    }
 
   mass_checks("deal_with_galaxy_merger #4",p);
   mass_checks("deal_with_galaxy_merger #4",merger_centralgal);
@@ -355,19 +356,8 @@ void deal_with_galaxy_merger(int p, int merger_centralgal, int centralgal, doubl
 
   /* If we are in the presence of a minor merger, check disk stability (the disk
    * is completely destroyed in major mergers)*/
-  if(TrackDiskInstability)
-    if(mass_ratio < ThreshMajorMerger &&
-       (Gal[merger_centralgal].DiskMass+Gal[merger_centralgal].BulgeMass) > 0.0)
-      check_disk_instability(merger_centralgal);
-
-  /* Not supported option to shrink bulge sizes in gas rich mergers */
-#ifdef SHRINKINRICHMERGER
-  if (Mcgas+Mcstar+Mpgas+Mpstar > 1.e-8 ) {
-    Gal[merger_centralgal].BulgeSize /= 1+pow((Mcgas+Mpgas)/(Mcgas+Mcstar+Mpgas+Mpstar)/0.15,1.);
-    if (Gal[merger_centralgal].BulgeSize < 1.e-8)
-      Gal[merger_centralgal].BulgeSize = 1.e-8;
-  }
-#endif
+  if(mass_ratio < ThreshMajorMerger && (Gal[merger_centralgal].DiskMass+Gal[merger_centralgal].BulgeMass) > 0.0)
+    check_disk_instability(merger_centralgal);
 
   if ((Gal[merger_centralgal].BulgeMass > 1.e-6 && Gal[merger_centralgal].BulgeSize == 0.0) ||
       (Gal[merger_centralgal].BulgeMass == 0.0 && Gal[merger_centralgal].BulgeSize >1.e-6)) {
@@ -379,7 +369,7 @@ void deal_with_galaxy_merger(int p, int merger_centralgal, int centralgal, doubl
   	terminate(sbuf);
   }
 
-  if (DiskRadiusMethod == 2) {
+  if (DiskRadiusModel == 0) {
     get_gas_disk_radius(merger_centralgal);
     get_stellar_disk_radius(merger_centralgal);
   }
@@ -399,39 +389,33 @@ void grow_black_hole(int merger_centralgal, double mass_ratio, double deltaT)
   double BHaccrete, fraction;
 
   /** @brief Grows black hole through accretion from cold gas during mergers,
-   *         as in Kauffmann & Haehnelt (2000). I have made an addition here -
-   *         the black hole can grow during minor mergers but at a reduced rate
-   *         and i have included evolution with redshift.
-   *         BlackHoleGrowth == 0 gives instantaneous accretion onto the black hole;
-   *         BlackHoleGrowth == 1 instead feeds an accretion disk: accretion occurs
+   *         as in Kauffmann & Haehnelt (2000).
    *                              in main.c */
 
   if(Gal[merger_centralgal].ColdGas > 0.0)
     {
-    BHaccrete = BlackHoleGrowthRate * mass_ratio
-      / (1.0 + pow2((BlackHoleCutoffVelocity / Gal[merger_centralgal].Vvir))) * Gal[merger_centralgal].ColdGas;
-    /* redshift dependent accretion, not published */
-    /* BHaccrete = BlackHoleGrowthRate * (1.0 + ZZ[Halo[halonr].SnapNum]) * mass_ratio */
+      BHaccrete = BlackHoleGrowthRate * mass_ratio
+	  / (1.0 + pow2((BlackHoleCutoffVelocity / Gal[merger_centralgal].Vvir))) * Gal[merger_centralgal].ColdGas;
+      /* redshift dependent accretion, not published */
+      /* BHaccrete = BlackHoleGrowthRate * (1.0 + ZZ[Halo[halonr].SnapNum]) * mass_ratio */
 
-    /* cannot accrete more gas than is available! */
-    if(BHaccrete > Gal[merger_centralgal].ColdGas)
-      BHaccrete = Gal[merger_centralgal].ColdGas;
+      /* cannot accrete more gas than is available! */
+      if(BHaccrete > Gal[merger_centralgal].ColdGas)
+	BHaccrete = Gal[merger_centralgal].ColdGas;
 
-    fraction=BHaccrete/Gal[merger_centralgal].ColdGas;
-    if (BlackHoleGrowth == 0) {
+      fraction=BHaccrete/Gal[merger_centralgal].ColdGas;
+
       Gal[merger_centralgal].BlackHoleMass += BHaccrete;
       Gal[merger_centralgal].QuasarAccretionRate += BHaccrete / deltaT;
-    } else if (BlackHoleGrowth == 1)
-      Gal[merger_centralgal].BlackHoleGas += BHaccrete;
-    Gal[merger_centralgal].ColdGas -= BHaccrete;
-    Gal[merger_centralgal].MetalsColdGas=
-      metals_add(Gal[merger_centralgal].MetalsColdGas, Gal[merger_centralgal].MetalsColdGas,-fraction);
+
+      Gal[merger_centralgal].ColdGas -= BHaccrete;
+      Gal[merger_centralgal].MetalsColdGas=
+	  metals_add(Gal[merger_centralgal].MetalsColdGas, Gal[merger_centralgal].MetalsColdGas,-fraction);
 
 #ifdef INDIVIDUAL_ELEMENTS
-    Gal[merger_centralgal].ColdGas_elements =
-      elements_add(Gal[merger_centralgal].ColdGas_elements, Gal[merger_centralgal].ColdGas_elements,-fraction);
+      Gal[merger_centralgal].ColdGas_elements =
+	  elements_add(Gal[merger_centralgal].ColdGas_elements, Gal[merger_centralgal].ColdGas_elements,-fraction);
 #endif
-
   }
 }
 
@@ -446,11 +430,7 @@ void add_galaxies_together(int t, int p)
    *         the stars of the satellite if  BulgeFormationInMinorMergersOn=1.
    *         In case of a major merger, everything that was put in the disk of
    *         the central galaxy will be moved into the bulge
-   *
-   * TODO Even though galaxy p has been set to type 3 (ie a non-galaxy), it would
-   * make mass conservation more explicit to zero the properties of galaxy p after
-   * the merger.
-   * TODO Correct artificial diffusion of metals when BulgeFormationInMinorMergersOn=1. */
+   */
   int outputbin, j;
   float tspin[3],tmass,pmass;
 
@@ -469,7 +449,7 @@ void add_galaxies_together(int t, int p)
   transfer_gas(t,"Cold",p,"Cold",1.,"add_galaxies_together", __LINE__);
   //transfer_gas(t,"Ejected",p,"Cold",1.,"add_galaxies_together", __LINE__);
   transfer_gas(t,"Hot",p,"Hot",1.,"add_galaxies_together", __LINE__);
-  transfer_gas(t,"Ejected",p,"Ejected",1.,"add_galaxies_together", __LINE__); //TODO chose move to ejected or hot
+  transfer_gas(t,"Ejected",p,"Ejected",1.,"add_galaxies_together", __LINE__);
 #ifdef TRACK_BURST
     /* The whole burst component gets transferred */
   transfer_stars(t,"Burst",p,"Burst",1.);
@@ -483,8 +463,6 @@ void add_galaxies_together(int t, int p)
 
   Gal[t].BlackHoleMass += Gal[p].BlackHoleMass;
   Gal[p].BlackHoleMass=0.;
-  Gal[t].BlackHoleGas += Gal[p].BlackHoleGas;
-  Gal[p].BlackHoleGas=0.;
   Gal[t].StarMerge += Gal[p].StarMerge;
   Gal[p].StarMerge=0.;
 
@@ -498,24 +476,11 @@ void add_galaxies_together(int t, int p)
     for (j=0;j<3;j++)
      Gal[t].GasSpin[j]=tspin[j]/(Gal[t].ColdGas);
 
-#ifdef SAVE_MEMORY
   Gal[t].Sfr += Gal[p].Sfr;
-#else
-  for(outputbin = 0; outputbin < NOUT; outputbin++)
-    Gal[t].Sfr[outputbin] += Gal[p].Sfr[outputbin];
-#endif
 
-  if(BulgeFormationInMinorMergersOn) {
-#ifdef SAVE_MEMORY
+  if(BulgeFormationInMinorMergersOn)
     Gal[t].SfrBulge += Gal[p].Sfr;
-#else
-    for(outputbin = 0; outputbin < NOUT; outputbin++)
-      Gal[t].SfrBulge[outputbin] += Gal[p].Sfr[outputbin];
-#endif
-  }
 
-  /* Add the black hole accretion rates.  This makes little sense but is not
-   * used if the superior BlackHoleGrowth==1 switch is on. */
   Gal[t].QuasarAccretionRate += Gal[p].QuasarAccretionRate;
   Gal[t].RadioAccretionRate += Gal[p].RadioAccretionRate;
 
@@ -523,32 +488,37 @@ void add_galaxies_together(int t, int p)
   	 Gal[t].MassWeightAge[outputbin] += Gal[p].MassWeightAge[outputbin];
 
 #ifndef  POST_PROCESS_MAGS
+
 /* Add the luminosities of the satellite and central galaxy */
 #ifdef OUTPUT_REST_MAGS
   for(outputbin = 0; outputbin < NOUT; outputbin++)
     {
 
-    for(j = 0; j < NMAG; j++) {
+    for(j = 0; j < NMAG; j++)
+    {
       Gal[t].Lum[j][outputbin] += Gal[p].Lum[j][outputbin];
       Gal[t].YLum[j][outputbin] += Gal[p].YLum[j][outputbin];
 #ifdef ICL
       Gal[t].ICLLum[j][outputbin] += Gal[p].ICLLum[j][outputbin];
 #endif
     }
-    if(BulgeFormationInMinorMergersOn) {
-      for(j = 0; j < NMAG; j++) {
-	Gal[t].LumBulge[j][outputbin] += Gal[p].Lum[j][outputbin];
-	Gal[t].YLumBulge[j][outputbin] += Gal[p].YLum[j][outputbin];
+    if(BulgeFormationInMinorMergersOn)
+    {
+    	for(j = 0; j < NMAG; j++)
+    	{
+    		Gal[t].LumBulge[j][outputbin] += Gal[p].Lum[j][outputbin];
+    		Gal[t].YLumBulge[j][outputbin] += Gal[p].YLum[j][outputbin];
       }
     }
-    else {
-      for(j = 0; j < NMAG; j++) {
-	Gal[t].LumBulge[j][outputbin]  += Gal[p].LumBulge[j][outputbin];
-	Gal[t].YLumBulge[j][outputbin] += Gal[p].YLumBulge[j][outputbin];
+    else
+    {
+      for(j = 0; j < NMAG; j++)
+      {
+      	Gal[t].LumBulge[j][outputbin]  += Gal[p].LumBulge[j][outputbin];
+      	Gal[t].YLumBulge[j][outputbin] += Gal[p].YLumBulge[j][outputbin];
       }
     }
-
-  }
+    }
 #endif // OUTPUT_REST_MAGS
 
 #ifdef COMPUTE_OBS_MAGS
@@ -598,8 +568,7 @@ void add_galaxies_together(int t, int p)
 
 /** @brief In a major merger, both disks are destroyed and all the mass transferred
  *         to the bulge. The galaxies have already been merged, so all we need to do here
- *         is transfer stars from disk to bulge.
- *  TODO Should we also transfer cold to hot gas? */
+ *         is transfer stars from disk to bulge. */
 
 void make_bulge_from_burst(int p)
 {
@@ -608,12 +577,7 @@ void make_bulge_from_burst(int p)
   transfer_stars(p,"Bulge",p,"Disk",1.);
 
   /*  update the star formation rate */
-#ifdef SAVE_MEMORY
   Gal[p].SfrBulge  = Gal[p].Sfr;
-#else
-  for(outputbin = 0; outputbin < NOUT; outputbin++)
-    Gal[p].SfrBulge[outputbin] += Gal[p].Sfr[outputbin];
-#endif
 
 #ifndef  POST_PROCESS_MAGS
   int j;
@@ -645,7 +609,7 @@ void make_bulge_from_burst(int p)
 double collisional_starburst_recipe(double mass_ratio, int merger_centralgal, int centralgal,
 				  double time, double deltaT)
 {
-  /** @brief If StarBurstRecipe = 1 (since Croton2006), the Somerville 2001
+  /** @brief If StarBurstModel = 0 (since Croton2006), the Somerville 2001
    *         model of bursts is used. The burst can happen for both major
    *         and minor mergers, with a fraction of the added cold gas from
    *         the satellite and central being consumed. SN Feedback from
@@ -668,25 +632,14 @@ double collisional_starburst_recipe(double mass_ratio, int merger_centralgal, in
   if(mstars < 0.0)
     mstars = 0.0;
 
+  //otherwise there is another check inside SN_feedback
 #ifdef FEEDBACK_COUPLED_WITH_MASS_RETURN
   if(mstars > Gal[merger_centralgal].ColdGas)
         mstars = Gal[merger_centralgal].ColdGas;
 #endif
 
-
-
   /*  update the star formation rate */
-#ifdef SAVE_MEMORY
   Gal[merger_centralgal].Sfr += mstars / deltaT;
-#else
-  int outputbin;
-  for(outputbin = 0; outputbin < NOUT; outputbin++) {
-    if(Gal[merger_centralgal].SnapNum == ListOutputSnaps[outputbin]) {
-      Gal[merger_centralgal].Sfr[outputbin] += mstars / deltaT;
-      break;
-    }
-  }
-#endif
 
   /* Store the value of the metallicity of the cold phase when SF occurs.
    * Used to update luminosities below */
@@ -696,11 +649,11 @@ double collisional_starburst_recipe(double mass_ratio, int merger_centralgal, in
   	update_stars_due_to_reheat(merger_centralgal, centralgal, &mstars);
 
   // update_from_star_formation can only be called
-    // after SD_feeedback recipe since stars need to be re_set once the reheated mass is known
-    // (star formation and feedback share the same fraction of cold gas)
-    int nstep=-1;
-  	if (mstars > 0.)
-  		update_from_star_formation(merger_centralgal, mstars, true, nstep); // true indicates starburst
+  // after SD_feeedback recipe since stars need to be re_set once the reheated mass is known
+  // (star formation and feedback share the same fraction of cold gas)
+  int nstep=-1;
+  if (mstars > 0.)
+    update_from_star_formation(merger_centralgal, mstars, true, nstep); // true indicates starburst
 
 	mass_checks("collisional_starburst_recipe #2",merger_centralgal);
 
@@ -708,20 +661,14 @@ double collisional_starburst_recipe(double mass_ratio, int merger_centralgal, in
 
 #ifndef FEEDBACK_COUPLED_WITH_MASS_RETURN
   if (mstars > 0.)
-  	SN_feedback(merger_centralgal, centralgal, mstars, "ColdGas");
-#ifdef AGNFB
-  	SN_feedback(merger_centralgal, centralgal, mstars, "ColdGas");
+    SN_feedback(merger_centralgal, centralgal, mstars, "ColdGas");
 #endif
-#endif
-
-
-
 
 #ifdef COMPUTE_SPECPHOT_PROPERTIES
 #ifndef POST_PROCESS_MAGS
   /*  update the luminosities due to the stars formed */
   if (mstars > 0.0)
-    add_to_luminosities(merger_centralgal, mstars, time, metallicitySF);
+    add_to_luminosities(merger_centralgal, mstars, time, deltaT / STEPS, metallicitySF);
 #endif //NDEF POST_PROCESS_MAGS
 #endif
 
@@ -789,31 +736,58 @@ void  bulgesize_from_merger(double mass_ratio,int merger_centralgal,int p,
       Rp=0.0;
   }
 
+  if(Rp>0. && Rp<1.e-8)
+  	Rp=1.e-8;
+  if(Rc>0. && Rc<1.e-8)
+    	Rc=1.e-8;
   /* If both original radius are bigger then 0 then this is Eq. 33 in Guo 2010
    * solved for R_new,bulge with all terms divided by G and C. */
-  if (Rp >1.e-8 && Rc >1.e-8 )
-    Gal[merger_centralgal].BulgeSize=(Mp+Mc)*(Mp+Mc)/(Mp*Mp/Rp+Mc*Mc/Rc+fint/c*Mp*Mc/(Rp+Rc));
+  if(Rc >= 1.e-8 && Rp >= 1.e-8)
+  	Gal[merger_centralgal].BulgeSize=(Mp+Mc)*(Mp+Mc)/(Mp*Mp/Rp+Mc*Mc/Rc+fint/c*Mp*Mc/(Rp+Rc));
 
-  if (Rc >1.e-8 && Rp <1.e-8)
+  if(Rc >= 1.e-8 && Rp <= 1.e-8)
     Gal[merger_centralgal].BulgeSize=(Mp+Mc)*(Mp+Mc)/(Mc*Mc/Rc+fint/c*Mp*Mc/(Rp+Rc));
 
-  if(Rc <1.e-8 && Rp <1.e-8)
+  if(Rc <= 1.e-8 && Rp <=1.e-8)
     Gal[merger_centralgal].BulgeSize=0.0;
 
-  if (Rc <1.e-8 && Rp > 1.e-8)
+  if(Rc <= 1.e-8 && Rp >= 1.e-8)
     Gal[merger_centralgal].BulgeSize=(Mp+Mc)*(Mp+Mc)/(Mp*Mp/Rp+fint/c*Mp*Mc/(Rp+Rc));
 
 
-  if ((Mp+Mc > 0.0 && Gal[merger_centralgal].BulgeSize == 0.0 )||(Mp+Mc == 0.0 && Gal[merger_centralgal].BulgeSize> 0.0)) {
-  	char sbuf[1000];
-  	  	sprintf(sbuf, "bulgesize wrong in merger. bulgemass %f, bulgesize %f, Rp %f, Rc %f,Mp %f,Mc %f, mass ratio %f, halonr %d, merger_centralgal %d\n,   p: stellarmass %f, bulgemass %f, bulgesize %f, coldgas %f,gasdisk %f,stellardisk %f \n,   central: stellarmass %f, bulgemass %f, bulgesize %f, coldgas %f,gasdisk %f,stellardisk %f \n",
-  	  			Gal[merger_centralgal].BulgeMass, Gal[p].BulgeSize, Rp,Rc,Mp,Mc, mass_ratio, Gal[merger_centralgal].HaloNr,
-  	  			merger_centralgal, (Gal[p].DiskMass+Gal[p].BulgeMass),Gal[p].BulgeMass, Gal[p].BulgeSize,Gal[p].ColdGas,
-  	  			Gal[p].GasDiskRadius,Gal[p].StellarDiskRadius, (Gal[merger_centralgal].DiskMass+Gal[merger_centralgal].BulgeMass),
-  	  			Gal[merger_centralgal].BulgeMass,  Gal[merger_centralgal].BulgeSize,Gal[merger_centralgal].ColdGas,
-  	  			Gal[merger_centralgal].GasDiskRadius, Gal[merger_centralgal].StellarDiskRadius);
-  	  	terminate(sbuf);
-   exit(0);
+  if ((Mp+Mc > 0.0 && Gal[merger_centralgal].BulgeSize == 0.0 )||(Mp+Mc == 0.0 && Gal[merger_centralgal].BulgeSize> 0.0))
+    {
+      char sbuf[1000];
+      printf("halonr=%d, merger_centralgal %d\n\n", Gal[merger_centralgal].HaloNr, merger_centralgal);
+
+      printf("New Bulge Mass from Central (MC)=%e\n New Bulge Mass from Satellite (Mp)=%e\n NewBulge size=%e\n\n",
+	     Mp,Mc,Gal[merger_centralgal].BulgeSize);
+
+      if(mass_ratio < ThreshMajorMerger)
+	{
+	  printf("minor merger, new mass=original mass\n");
+	  printf("New Bulge Mass From Central (Mc)   = Mcbulge = %f\n",Mcbulge);
+	  printf("New Bulge Mass From Satellite (Mp) = Mpstar  = %f\n",Mpstar);
+	}
+      else
+	{
+	  printf("New Bulge From Central (Mc)   = Mcstar+frac*Mcgas = %f+%f*%f\n", Mcstar, frac, Mcgas);
+	  printf("New Bulge From Satellite (Mp) = Mpstar+frac*Mpgas = %f+%f*%f\n", Mpstar, frac, Mpgas);
+	}
+
+      printf("BulgeSize from Central (Rc)=%e\nBulgeSize from Satellite (Rp)=%e\nmass ratio=%f\n\n",Rc,Rp, mass_ratio);
+
+      printf("the following masses don't tell a lot because things have been merged already!!!\n");
+      printf("    sat: BulgeMass=%0.7f, BulgeSize=%0.7f, GasMass=%0.7f, GasSize=%0.7f, DiskMass=%0.7f StellarSize=%0.7f \n",
+	     Gal[p].BulgeMass, Gal[p].BulgeSize, Gal[p].ColdGas, Gal[p].GasDiskRadius,
+	     Gal[p].DiskMass, Gal[p].StellarDiskRadius);
+      printf(	"central: BulgeMass=%0.7f, BulgeSize=%0.7f, GasMass=%0.7f, GasSize=%0.7f, DiskMass=%0.7f StellarSize=%0.7f \n",
+		Gal[merger_centralgal].BulgeMass,  Gal[merger_centralgal].BulgeSize, Gal[merger_centralgal].ColdGas,
+		Gal[merger_centralgal].GasDiskRadius, Gal[merger_centralgal].DiskMass, Gal[merger_centralgal].StellarDiskRadius);
+
+      sprintf(sbuf,"\n bulgesize wrong in merger");
+      terminate(sbuf);
+      exit(0);
   }
 
 }

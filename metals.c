@@ -35,6 +35,8 @@
 #include "allvars.h"
 #include "proto.h"
 
+
+
 #ifdef DETAILED_METALS_AND_MASS_RETURN
 
 /* Defined in allvars.h
@@ -46,7 +48,7 @@
  * };
  */
 
-struct metals metals_add(struct metals m1, 
+struct metals metals_add(struct metals m1,
 			 struct metals m2,
 			 float fraction)
 {
@@ -58,7 +60,7 @@ struct metals metals_add(struct metals m1,
   return(m);
 }
 
-struct metals metals_init() 
+struct metals metals_init()
 {
   struct metals m;
   m.type1a=0.;
@@ -67,7 +69,7 @@ struct metals metals_init()
   return(m);
 }
 
-void metals_print(char s[],struct metals m) 
+void metals_print(char s[],struct metals m)
 {
   printf("%s.type1a [Msun] = %.2f\n",s,m.type1a*1.0e10/Hubble_h);
   printf("%s.type2 [Msun]  = %.2f\n",s,m.type2*1.0e10/Hubble_h);
@@ -84,19 +86,19 @@ float metals_total(struct metals m)
 
 // The following mimics the original code with a single metallicity
 
-float metals_add(float m1, 
+float metals_add(float m1,
 		 float m2,
 		 float fraction)
 {
   return(m1+fraction*m2);
 }
 
-float metals_init() 
+float metals_init()
 {
   return(0.);
 }
 
-void metals_print(char s[],float m) 
+void metals_print(char s[],float m)
 {
   printf("%s=%f\n",s,m);
   return;
@@ -108,3 +110,5 @@ float metals_total(float m)
 }
 
 #endif
+
+

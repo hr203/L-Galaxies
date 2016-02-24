@@ -748,16 +748,31 @@ void update_yields_and_return_mass(int p, int centralgal, double dt, int nstep)
     	Gal[p].MassWeightAge[n] -= (AgeCorrectionDisk[n]+AgeCorrectionBulge[n]);
     }
     
+#ifdef H2_AND_RINGS
+    double TotalMassReturnedToColdDiskGasr[RNUM], TotalMassReturnedToHotGasr[RNUM];
+    double Coldmetallicityr[RNUM], Hotmetallicity[RNUM];
+    int ii;
+    for(ii=0;ii<RNUM;ii++)
+    {
+    	TotalMassReturnedToColdDiskGasr[ii]= TotalMassReturnedToColdDiskGas/((float)RNUM);
+    	TotalMassReturnedToHotGasr[ii]=TotalMassReturnedToHotGasr/((float)RNUM);
+    	Coldmetallicityr[ii]=metals_total(Gal[p].MetalsColdGas)/Gal[p].ColdGas/((float)RNUM);
+    	Hotmetallicity[ii]=metals_total(Gal[p].MetalsHotGas)/Gal[p].HotGas/((float)RNUM);
+    }
+#endif
+
 #ifdef FEEDBACK_COUPLED_WITH_MASS_RETURN
     if(TotalMassReturnedToColdDiskGas>0.)
+#ifndef H2_AND_RINGS
     	SN_feedback(p, centralgal, TotalMassReturnedToColdDiskGas, "ColdGas");
+#else
+    SN_feedback(p, centralgal, TotalMassReturnedToColdDiskGas, TotalMassReturnedToColdDiskGasr, "ColdGas", Coldmetallicityr);
+#endif
     if(TotalMassReturnedToHotGas>0.)
+#ifndef H2_AND_RINGS
     	SN_feedback(p, centralgal, TotalMassReturnedToHotGas, "HotGas");
-#ifdef AGNFB
-    if(TotalMassReturnedToColdDiskGas>0.)
-        AGN_feedback(p, centralgal, TotalMassReturnedToColdDiskGas, "ColdGas");
-    if(TotalMassReturnedToHotGas>0.)
-        AGN_feedback(p, centralgal, TotalMassReturnedToHotGas, "HotGas");
+#else
+    SN_feedback(p, centralgal, TotalMassReturnedToHotGas, TotalMassReturnedToHotGasr, "HotGas", Hotmetallicity);
 #endif
 #endif
 

@@ -7,8 +7,8 @@
 #include "allvars.h"
 #include "proto.h"
 
-/** @file recipe_disrupt.c
- *  @brief recipe_disrupt.c checks if a type 2 satellite galaxy should
+/** @file model_disrupt.c
+ *  @brief model_disrupt.c checks if a type 2 satellite galaxy should
  *         or not be disrupted due to tidal forces
  *
  *  This routine takes into account the tidal effects that satellite
@@ -43,15 +43,13 @@
  *
  *  the galaxy is disrupted.
  *
- *  TODO: shouldn't galaxy p be voided after disruption?
- *
  *  */
 
-
-void disrupt(int p, int centralgal)
+void disrupt(int p)
 {
   double rho_sat, rho_cen;
   double cen_mass, r_sat, radius;
+  int centralgal;
 
   /* If the main halo density at the pericentre (closest point in the orbit
    * to the central galaxy)is larger than the satellite's density at the
@@ -59,7 +57,6 @@ void disrupt(int p, int centralgal)
    * the satellite is a type 2 the only mass components remaining and
    * contributing to the density are the cold gas and stellar mass. */
 
-  //TODO If we are passing in centralgal then we should not set it here 
   centralgal=Gal[p].CentralGal;
  
   mass_checks("Top of disrupt",centralgal);
@@ -82,18 +79,6 @@ void disrupt(int p, int centralgal)
   {
     /* Calculate the rho according to the real geometry */
     r_sat = sat_radius(p);
-
-    /* Or use radius at the mean radius of the stellar mass */
-    /* r_sat=(Gal[p].BulgeMass*Gal[p].BulgeSize+(Gal[p].StellarMass-Gal[p].BulgeMass)
-     *        *Gal[p].StellarDiskRadius/3*1.68)
-     *       /(Gal[p].StellarMass); */
-
-    /* to calculate the density */
-    //rho_sat=Gal[p].StellarMass/pow2(r_sat);
-    /*if(Gal[p].OriRvir>r_sat)
-    	rho_sat=(Gal[p].DiskMass+Gal[p].BulgeMass+Gal[p].ColdGas+0.1*Gal[p].OriMvir/Gal[p].OriRvir * r_sat)/pow3(r_sat);
-    else
-    	rho_sat=(Gal[p].DiskMass+Gal[p].BulgeMass+Gal[p].ColdGas+0.1*Gal[p].OriMvir)/pow3(r_sat);*/
     rho_sat=(Gal[p].DiskMass+Gal[p].BulgeMass+Gal[p].ColdGas)/pow3(r_sat);
   }
   else
@@ -116,19 +101,16 @@ void disrupt(int p, int centralgal)
       GalTree[q].NextProgGal = Gal[p].FirstProgGal;
       
       if(GalTree[q].NextProgGal >= NGalTree)
-	    {
-	      printf("q=%d p=%d GalTree[q].NextProgGal=%d NGalTree=%d\n",
-		     q, p, GalTree[q].NextProgGal, NGalTree);
-	      terminate("problem");
-	    }
+	{
+	  printf("q=%d p=%d GalTree[q].NextProgGal=%d NGalTree=%d\n",
+		 q, p, GalTree[q].NextProgGal, NGalTree);
+	  terminate("problem");
+	}
     }
 
     if(q < 0)
     	terminate("this shouldn't happen");
 	
-     // TODO if !(q>=0) shouldn't we set
-      // Gal[Gal[p].CentralGal].FirstProgGal to Gal[p].FirstProgGal  ??
-
     q = GalTree[q].NextProgGal;
 
     if(q < 0)
@@ -141,17 +123,8 @@ void disrupt(int p, int centralgal)
 #endif
     /* Put gas component to the central galaxy hot gas and stellar material into the ICM.
      * Note that the satellite should have no extended components. */
-    // TODO Shouldn't the stars end up in the bulge? - this is a close merger
-    //transfer_gas(centralgal,"Hot",p,"Cold",1.,"disrupt", __LINE__);
-    //transfer_gas(centralgal,"Ejected",p,"Cold",1.,"disrupt", __LINE__);
 
-    //Gal[centralgal].BlackHoleMass+=0.0002*Gal[p].ColdGas;
-    //Gal[p].ColdGas=0.;
-
-    Gal[centralgal].BlackHoleMass+=BlackHoleDisruptGrowthRate*Gal[p].ColdGas;
-    Gal[p].ColdGas-=BlackHoleDisruptGrowthRate*Gal[p].ColdGas;
     transfer_gas(centralgal,"Hot",p,"Cold",1.,"disrupt", __LINE__);
-
     transfer_gas(centralgal,"Hot",p,"Hot",1.,"disrupt", __LINE__);
 #ifdef TRACK_BURST
     /* Transfer burst component first */
@@ -199,19 +172,15 @@ double peri_radius(int p, int centralgal)
   double a, b, v[3], r[3], x, x0;
   for(i = 0; i < 3; i++)
     {
-	  r[i] = wrap(Gal[p].Pos[i]-Gal[centralgal].Pos[i],BoxSize);
-	  r[i] /= (1 + ZZ[Halo[Gal[centralgal].HaloNr].SnapNum]);
-	  v[i] = Gal[p].Vel[i] - Gal[centralgal].Vel[i];
-	  //r[i] = wrap(Gal[p].Pos_notupdated[i]-Gal[centralgal].Pos[i],BoxSize);
-	  //r[i] /= (1 + ZZ[Halo[Gal[centralgal].HaloNr].SnapNum]);
-	  //v[i] = Gal[p].Vel_notupdated[i] - Gal[centralgal].Vel[i];
+      r[i] = wrap(Gal[p].Pos[i]-Gal[centralgal].Pos[i],BoxSize);
+      r[i] /= (1 + ZZ[Halo[Gal[centralgal].HaloNr].SnapNum]);
+      v[i] = Gal[p].Vel[i] - Gal[centralgal].Vel[i];
     }
 
   b = 1 / 2. * (v[0] * v[0] + v[1] * v[1] + v[2] * v[2]) / pow2(Gal[centralgal].Vvir);
-  a =
-    1 / 2. * (v[0] * v[0] + v[1] * v[1] + v[2] * v[2] -
-	      pow2(r[0] * v[0] + r[1] * v[1] + r[2] * v[2])
-		   / (r[0] * r[0] + r[1] * r[1] + r[2] * r[2])) / pow2(Gal[centralgal].Vvir);
+  a = 1 / 2. * (v[0] * v[0] + v[1] * v[1] + v[2] * v[2] -
+	        pow2(r[0] * v[0] + r[1] * v[1] + r[2] * v[2])/
+		    (r[0] * r[0] + r[1] * r[1] + r[2] * r[2])) / pow2(Gal[centralgal].Vvir);
 
   x = sqrt(b / a);
   x0 = 1000;
@@ -260,19 +229,21 @@ double sat_radius(int p)
   ii = 0;
   do {
       // Not sure that we need the 0.5 here - it's all a matter of definition
-  	r = (SAT_RADIUS_RMIN) + (ii+0.5)* dr;
-  	M = Mgas*diskmass(r/rgd)+Mdisk*diskmass(r/rd);
+      r = (SAT_RADIUS_RMIN) + (ii+0.5)* dr;
+      M = Mgas*diskmass(r/rgd)+Mdisk*diskmass(r/rd);
 
 #ifndef GUO10
 #ifndef GUO13
-  	if(Mbulge>0.)
+#ifndef HENRIQUES13
+      if(Mbulge>0.)
 #endif
 #endif
-  		M +=Mbulge*bulgemass(r/rb);
+#endif
+	M +=Mbulge*bulgemass(r/rb);
 
 
-  	ii++;
-  	if(ii > 1000) terminate ("couldn't find half mass radius");
+      ii++;
+      if(ii > 1000) terminate ("couldn't find half mass radius");
   }
   while(M < 0.5*totmass);
 
@@ -283,9 +254,8 @@ double sat_radius(int p)
 
 double isothermal_mass(double Mvir, double Rvir, double dr)
 {
-	return Mvir/Rvir * dr;
+  return Mvir/Rvir * dr;
 }
-
 
 /** @brief Returns the mass of a disk within a given radius in units of the scale length
  *         Disk profile -> exponential */
@@ -296,22 +266,11 @@ double diskmass(double x)
 
 /** @brief Returns the mass of a bulge at a certain radius.
  *         Bulge profile -> de Vaucouleurs type r^{1/4} law */
-
-// The previous complicated expression seemed to be a long-winded way of saying that
-// the density varies as 1/x^2(1+x)^2, leading to
 double bulgemass(double x)
 {
   return x/(1.+x);
 }
 
-/*double diskmass(double r, double rd, double Sigma0, double dr)
-{
-  return 2 * M_PI * Sigma0 * dr * r * exp(-r / rd);
-}
-double bulgemass(double r, double rb, double Mbulge,double dr)
-{
-  return  Mbulge / (4 * M_PI * pow3(rb)) * 1 / pow2(r / rb) * 1 / pow2(1 + r/rb) * 4 * M_PI * r * r *dr;
-}*/
 
 
 

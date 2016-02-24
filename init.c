@@ -11,9 +11,6 @@
 #include "allvars.h"
 #include "proto.h"
 #include "mcmc_vars.h"
-#ifdef ALL_SKY_LIGHTCONE
-#include "lightcone.h"
-#endif
 
 /**@file init.c
  * @brief Sets up some unit conversion variables; converts SN and AGN feedback
@@ -23,9 +20,8 @@
  *
  *        <B>set_units()</B> - THIS IS FUNDAMENTAL TO UNDERSTAND THE UNITS IN
  *        THE CODE! sets ups some variables used to convert from physical to
- *        internal units (as UnitDensity_in_cgs). These are obtained from the
- *        three defined in input.par: UnitLength_in_cm, UnitMass_in_g and
- *        UnitVelocity_in_cm_per_s.
+ *        internal units (as UnitDensity_in_cgs). These are obtained from
+ *        UNITLENGTH_IN_CM, UNITMASS_IN_G and UNITVELOCITY_IN_CM_PER_S.
  *
  *        <B>read_output_snaps()</B> - reads in the list of output redshifts from
  *        file ./input/desired_output_redshifts.txt and converts them into snapsshots
@@ -39,9 +35,6 @@
  *        to read can be defined in a file, instead of being read sequentially.
  *        These are defined in FileNrDir, in input.par, and read into
  *        ListInputFilrNr[].
- *
- *        <B>read_sfrz()</B> - Done if H2FORMATION OFF - option not supported.
- *        Reads in Rho[] and H2[][].
  *
  *        <B>read_reionization()</B> - Reads in Reion_z[] and Reion_Mc[] from
  *        ./input/Mc.txt. These are used if UPDATEREIONIZATION ON to get Okamoto(2008)
@@ -108,21 +101,8 @@ void init(void)
   ScaleFactor = pow(2, Hashbits) / BoxSize;
 #endif
 
-
-/*#ifdef FEEDBACK_COUPLED_WITH_MASS_RETURN
-  EnergySN*=1./RecycleFraction;
   EnergySNcode = EnergySN / UnitEnergy_in_cgs * Hubble_h;
-
-  EnergySNII*=1./RecycleFraction;
-  EnergySNIa*=1./RecycleFraction;
-  EnergyAGB*=1./RecycleFraction;
-  EnergySNIIcode = EnergySNII / UnitEnergy_in_cgs * Hubble_h;
-  EnergySNIacode = EnergySNIa / UnitEnergy_in_cgs * Hubble_h;
-  EnergyAGBcode = EnergyAGB / UnitEnergy_in_cgs * Hubble_h;
-#else*/
-  EnergySNcode = EnergySN / UnitEnergy_in_cgs * Hubble_h;
-//#endif
-  EtaSNcode = EtaSN * (UnitMass_in_g / SOLAR_MASS) / Hubble_h;
+  EtaSNcode = EtaSN * (UNITMASS_IN_G / SOLAR_MASS) / Hubble_h;
 
 
   //reads in the redshifts for the used Cosmology
@@ -139,11 +119,7 @@ void init(void)
   read_file_nrs();
 #endif
 
-#ifdef H2FORMATION
-  read_sfrz();
-#endif
-
-  if(ReionizationOn == 2) 
+  if(ReionizationModel == 0)
     read_reionization();
 
 
@@ -171,39 +147,14 @@ void init(void)
 #ifdef SPEC_PHOTABLES_ON_THE_FLY
   setup_Spec_LumTables_onthefly();
 #endif
-#endif
-#endif
+#endif //COMPUTE_SPECPHOT_PROPERTIES
+#endif //MR_PLUS_MRII
 
 //READ IN THE YIELD TABLES, AND FORM NORMALISED YIELD ARRAYS:
 #ifdef DETAILED_METALS_AND_MASS_RETURN
   read_yield_tables();
-/*#ifdef INDIVIDUAL_ELEMENTS
-  SNe_rates();
-#endif*/
   init_integrated_yields();
   integrate_yields();
-#endif
-
-
-#ifdef ALL_SKY_LIGHTCONE
-  int nstep, nr, i;
-  float previoustime, newtime, deltaT, time;
-
-  for (nr = 0 ; nr < NCONES; nr++)
-    lightcone_geometry(nr);
-  read_distance_table();
-
-  for(i = 1; i < Zlistlen; i++)
-    for (nstep = 0; nstep < STEPS; nstep++)
-    {
-      previoustime = NumToTime(i-1);
-      newtime = NumToTime(i);
-      deltaT = previoustime - newtime;
-      time = previoustime - (nstep + 0.5) * (deltaT / STEPS);
-      LightCone_Time[i * STEPS + nstep] = time;
-      LightCone_RR[i * STEPS + nstep] = Time_to_Distance(time);
-//      printf("%d %d %g %g, z=%f\n",i, nstep, LightCone_RR[i * STEPS + nstep], LightCone_Time[i * STEPS + nstep], Distance_to_Redshift(Time_to_Distance(time)));
-    }
 #endif
 
 }
@@ -248,20 +199,9 @@ void read_zlist(void)
   	//convert AA[] into redshift - ZZ[]
        ZZ[i] = 1 / AA[i] - 1;
        //table with time in internal units (Mpc/Km/s/h)
-//       if(ZZ[i]>=0.0)
        Age[i] = time_to_present(ZZ[i]);
 
-       double zplus1;
-       zplus1 = 1 + ZZ[i];
-      // printf("%d, %0.6f, %0.6f, %0.6f, %0.6f\n", i, AA[i], ZZ[i],
-      	//	 Hubble_h*sqrt(Omega * zplus1 * zplus1 * zplus1 + (1 - Omega - OmegaLambda) * zplus1 * zplus1 +
-      	//	     	 		  OmegaLambda), Age[i]* UnitTime_in_years / Hubble_h/1.e9);
-
-       //       else
-//      	 Age[i] = 0.0;
-    	 //break;
      }
-  //printf("\n");
 
 #ifndef MCMC
 #ifdef PARALLEL
@@ -368,7 +308,7 @@ void read_output_snaps(void)
 {
   int i, j;
 
-#if !defined(GALAXYTREE) && !defined(ALL_SKY_LIGHTCONE) 
+#ifndef GALAXYTREE
   char buf[1000];
   FILE *fd;
 
@@ -410,7 +350,8 @@ void read_output_snaps(void)
       		if (ThisTask == 0)
 #endif
       			printf("requested z=%0.2f, available snap[%d] z=%f & snap[%d] z=%f, use snap[%d]\n",
-      					ListOutputRedshifts[i], ZZ[j-1], j-1, ZZ[j], j,ListOutputSnaps[i]);
+      					ListOutputRedshifts[i], j-1, ZZ[j-1], j, ZZ[j], ListOutputSnaps[i]);
+
 
       //define the LastSnapShotNr as the highest snapshot need to be computed
       if(LastSnapShotNr<ListOutputSnaps[i])
@@ -429,9 +370,9 @@ void read_output_snaps(void)
 
 
 /**@brief Sets up some variables used to convert from physical to internal
- *        units (as UnitDensity_in_cgs); These are obtained from the three
- *        defined in input.par: UnitLength_in_cm (cm to Mpc), UnitMass_in_g
- *        (g to 1e10Msun) and UnitVelocity_in_cm_per_s (cm/s to km/s).
+ *        units (as UnitDensity_in_cgs); These are obtained from
+ *        UNITLENGTH_IN_CM (cm to Mpc), UNITMASS_IN_G
+ *        (g to 1e10Msun) and UNITVELOCITY_IN_CM_PER_S (cm/s to km/s).
  *
  *       As defined in input.par, \f$\rm{UnitLength}_{\rm{cm}}=
  *       3.08568\times 10^{24}\rm{cm}\f$, converts from cm into Mpc and
@@ -473,10 +414,6 @@ void read_output_snaps(void)
  *       \f$\rm{HUBBLE}=3.2407789\times 10^{-18} h~\rm{s}^{-1}\f$, is the hubble
  *       constante in \f$(h~\rm{Km}~\rm{s}^{-1}\rm{Mpc}^{-1})\f$.
  *
- *       Then define a constant:
- *       \f$ \rm{RhoCrit} = \frac{3\times \rm{Hubble}^2}{8\times \rm{M}\_\rm{PI} \times G}=
- *       27.75505~h^2~10^{10}M_{\odot}\rm{Mpc}^{-3}\f$,
- *
  *       */
 
 void set_units(void)
@@ -486,36 +423,35 @@ void set_units(void)
 	// SEC_PER_MEGAYEAR   3.155e13
 	// SEC_PER_YEAR       3.155e7
 
-  //UnitLength_in_cm & UnitVelocity_in_cm_per_s; defined at input.par
-  UnitTime_in_s = UnitLength_in_cm / UnitVelocity_in_cm_per_s;
+  //UNITLENGTH_IN_CM & UNITVELOCITY_IN_CM_PER_S; defined at allvars.h
+  UnitTime_in_s = UNITLENGTH_IN_CM / UNITVELOCITY_IN_CM_PER_S;
   UnitTime_in_Megayears = UnitTime_in_s / SEC_PER_MEGAYEAR;
   UnitTime_in_years = 1e6*UnitTime_in_Megayears;
 
 
   //gravity in internal units
-  G = GRAVITY / pow3(UnitLength_in_cm) * UnitMass_in_g * pow2(UnitTime_in_s);//43.00708
+  G = GRAVITY / pow3(UNITLENGTH_IN_CM) * UNITMASS_IN_G * pow2(UnitTime_in_s);//43.00708
 
   //converts g.cm^-3 into internal units (1e10Msun Mpc^-3)
-  UnitDensity_in_cgs = UnitMass_in_g / pow3(UnitLength_in_cm);//6.769898e-31
+  UnitDensity_in_cgs = UNITMASS_IN_G / pow3(UNITLENGTH_IN_CM);//6.769898e-31
 
   //converts g.cm^-1s^-2 into internal units (10^10Msun.Mpc^-1(Mpc/Km/s)^-2) \f$
-  UnitPressure_in_cgs = UnitMass_in_g / UnitLength_in_cm / pow2(UnitTime_in_s);//6.769898e-21
+  UnitPressure_in_cgs = UNITMASS_IN_G / UNITLENGTH_IN_CM / pow2(UnitTime_in_s);//6.769898e-21
 
   //converts g.cm^-1.s^-3 into internal units (10^10Msun.Mpc^-1(Mpc/Km/s)^-3)
   UnitCoolingRate_in_cgs = UnitPressure_in_cgs / UnitTime_in_s;//2.193973e-40
 
   //converts g.cm^2.s^-2 into internal units (10^10Msun.Mpc^2(Mpc/Km/s)^-2)
-  UnitEnergy_in_cgs = UnitMass_in_g * pow2(UnitLength_in_cm) / pow2(UnitTime_in_s);//1.989000e+53
+  UnitEnergy_in_cgs = UNITMASS_IN_G * pow2(UNITLENGTH_IN_CM) / pow2(UnitTime_in_s);//1.989000e+53
 
 
   /* converts the Hubble constant from h.s^-1 into h.Km.s^-1.Mpc-1 */
   // Would make much more sense to define this including the h100 factor.
   Hubble = HUBBLE * UnitTime_in_s;//100.000
 
-  /* compute a quantitity */
-//TODO - never used
+#ifdef HALOMODEL
   RhoCrit = 3 * Hubble * Hubble / (8 * M_PI * G);//27.75505 (h^2.10^10Msun.Mpc^-3)
-
+#endif
 }
 
 
@@ -549,88 +485,6 @@ void read_file_nrs(void)
 
 
 #endif
-
-#ifdef H2FORMATION
-
-void read_sfrz(void)
-{
-  char buf[1000];
-  FILE *fd;
-  int p, i, k, j, l, dummy;
-  float dumb;
-  if(!(fd = fopen("./SFR_Z.dat","r")))
-    terminate("file not found.\n");
-    
-  printf("rho_len %d, zlen %d \n", RHO_LEN, Z_LEN);
-  for(p = 0; p < RHO_LEN; p++)
-    {
-      fscanf(fd, "%f", &Rho[p]);
-      for(i = 0; i < Z_LEN; i++)
-	fscanf(fd, "%f", &H2[p][i]);
-
-    }
-
-  fclose(fd);
-
-}
-
-void find_interpolate_h2(double metalicity, double rho, int *tabindex, int *metindex, double *f1, double *f2,double *fmet1, double *fmet2)
-{
-  double frac;
-  int idx;
-  float zz[] = { -2., -1.75, -1.5, -1.25, -1., -0.75, -0.5, -0.25, 0., 0.25, 0.5, 0.75, 1. };
-
-  if (rho < Rho[0]) /* rho less than the smalles rho in the table, take the 1st entry*/
-    {
-      *tabindex = 0;
-      *f1 = 1.;
-      *f2 = 0.;
-    }
-  else if(rho > Rho[RHO_LEN - 1])	/* rho great than the largest rho in the table, take the last entry */
-    {
-      *tabindex = RHO_LEN - 2;
-      *f1 = 0.;
-      *f2 = 1.;
-    }
-  else
-    {
-      idx = 0;
-      while(Rho[idx + 1] < rho)
-	idx++;
-
-      frac = (rho - Rho[idx]) / (Rho[idx + 1] - Rho[idx]);
-      *f1 = 1 - frac;
-      *f2 = frac;
-      *tabindex = idx;
-    }
-
-  if(metalicity < zz[0])	/* rho less than the smalles rho in the table, take the 1st entry */
-    {
-      *metindex = 0;
-      *fmet1 = 1.;
-      *fmet2 = 0.;
-    }
-  else if(metalicity > zz[Z_LEN - 1])	/* rho great than the largest rho in the table, take the last entry */
-    {
-      *metindex = RHO_LEN - 2;
-      *fmet1 = 0.;
-      *fmet2 = 1.;
-    }
-  else
-    {
-      idx = 0;
-      while(zz[idx + 1] < metalicity)
-	idx++;
-
-      frac = (-metalicity + zz[idx]) / (-zz[idx + 1] + zz[idx]);
-      *fmet1 = 1 - frac;
-      *fmet2 = frac;
-      *metindex = idx;
-    }
-
-}
-#endif
-
 
 void read_reionization(void)
 {
