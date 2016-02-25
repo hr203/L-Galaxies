@@ -101,6 +101,10 @@ void starformation(int p, int centralgal, double time, double dt, int nstep);
 void update_stars_due_to_reheat(int p, int centralgal, double *stars);
 void update_from_star_formation(int p, double stars, bool flag_burst, int nstep);
 void SN_feedback(int p, int centralgal, double stars, char feedback_location[]);
+#ifdef AGNFB
+void AGN_feedback(int p, int centralgal, double stars, char feedback_location[]);
+#endif
+
 void update_from_feedback(int p, int centralgal, double reheated_mass, double ejected_mass);
 void update_massweightage(int p, double stars, double time);
 

@@ -126,6 +126,9 @@ void starformation(int p, int centralgal, double time, double dt, int nstep)
   if (stars > 0.)
     SN_feedback(p, centralgal, stars, "ColdGas");
 #endif
+#ifdef AGNFB 
+    AGN_feedback(p, centralgal,stars, "ColdGas");
+#endif
 
 #ifdef COMPUTE_SPECPHOT_PROPERTIES
 #ifndef POST_PROCESS_MAGS
@@ -369,6 +372,19 @@ void SN_feedback(int p, int centralgal, double stars, char feedback_location[])
   if (reheated_mass + ejected_mass > 0.)
     update_from_feedback(p, centralgal, reheated_mass, ejected_mass);
 }
+
+
+#ifdef AGNFB 
+void AGN_feedback(int p, int centralgal, double stars,char feedback_location[])
+{
+  double reheated_mass=0., ejected_mass=0.,mass_ejected=0.01,mass_reheated=0.02;
+ reheated_mass = proportionality_constant1*stars;
+  ejected_mass = proportionality_constant2*stars;
+  if (reheated_mass + ejected_mass > 0.)
+        update_from_feedback(p, centralgal, reheated_mass, ejected_mass);
+}
+#endif
+
 
 
 /** @brief Updates cold, hot and external gas components due to SN

@@ -637,6 +637,10 @@ double collisional_starburst_recipe(double mass_ratio, int merger_centralgal, in
   if(mstars > Gal[merger_centralgal].ColdGas)
         mstars = Gal[merger_centralgal].ColdGas;
 #endif
+#ifdef AGNFB
+     AGN_feedback(merger_centralgal, centralgal, mstars, "ColdGas");
+#endif
+
 
   /*  update the star formation rate */
   Gal[merger_centralgal].Sfr += mstars / deltaT;

@@ -775,7 +775,12 @@ void update_yields_and_return_mass(int p, int centralgal, double dt, int nstep)
     SN_feedback(p, centralgal, TotalMassReturnedToHotGas, TotalMassReturnedToHotGasr, "HotGas", Hotmetallicity);
 #endif
 #endif
-
+#ifdef AGNFB
+    if(TotalMassReturnedToColdDiskGas>0.)
+        AGN_feedback(p, centralgal, TotalMassReturnedToColdDiskGas, "ColdGas");
+    if(TotalMassReturnedToHotGas>0.)
+        AGN_feedback(p, centralgal, TotalMassReturnedToHotGas, "HotGas");
+#endif
 
 
 }
