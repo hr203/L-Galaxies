@@ -1,16 +1,8 @@
+
 #define SQR(a) ((a)*(a))
 #define CUB(a) ((a)*(a)*(a))
 
-void halomodel(double* r_arr,double* proj_arr,float masslimit_low,float
-masslimit_high,int snap);
-double TwoPowerSpec(double k,int censat);
-double pconv_W_P_func(double theta,void *p);
-double pconv_W_func(double lq,void *p);
-double pconv_W(double k,double R,int censat);
-double calc_mean_rhalo_simple_func(double lm,void *p);
-double calc_mean_rhalo_simple(int censat,int norm);
-double calc_mean_rsat_func(double lr,void *p);
-double calc_mean_rsat(double lm,int extrar);
+void halomodel(double* r_arr,double* proj_arr,float masslimit_low,float masslimit_high,int snap);
 double NewPowerSpec(double k);
 double corr_qawo_func(double k,void *params);
 double corr_qawo(double r,double a,double L);
@@ -22,6 +14,10 @@ double PowerSpec(double k);
 double sigma2_func(double k,void *params);
 double TopHatSigma2(double R);
 double TopHatWindow(double kr);
+double Mass(double R);
+double lnSigma2(double lR,void *params);
+double lnSigma2lnM(double lm,void *params);
+double gammaM(double m);
 double nbargal(double m);
 double b(double m,int i);
 double mugal_qawo_func(double r,void *p);
@@ -38,8 +34,10 @@ void init_power();
 void init_sigma();
 void init_numgal(float masslimit_low,float masslimit_high,int snap);
 void initialize_halomodel();
-double my_f(const gsl_vector *v,void *params);
-void my_df(const gsl_vector *v,void *params,gsl_vector *df);
-void my_fdf(const gsl_vector *x,void *params,double *f,gsl_vector *df);
-void paramerror(double *x,double *p,double *perror);
-int poissonfit(int m,int n,double *p,double *dy,double **dvec,void *vars);
+int gammafit(int m,int n,double *p,double *dy,double **dvec,void *vars);
+
+struct fitvars {
+  double *x;
+  double *y;
+  double *w;
+};

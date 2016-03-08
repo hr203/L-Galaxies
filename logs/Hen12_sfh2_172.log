@@ -1,0 +1,173 @@
+Running .bash_profile
+stdin: is not a tty
+Password: Invalid password.
+Running on file 171
+-DUPDATETYPETWO        -DDISRUPTION           -DMERGE01              -DOVERWRITE_OUTPUT     -DNOUT=26               -DSAVE_MEMORY          -DGUO10 -DSTAR_FORMATION_HISTORY -DCOMPUTE_SPECPHOT_PROPERTIES -DOUTPUT_REST_MAGS     -DBC03  -DPHOTTABLES_PRECOMPUTED      -DPOST_PROCESS_MAGS -DNMAG=5
+
+reading parameter file:
+
+                          FirstFile	       171
+                           LastFile	       171
+                         MaxMemSize	      2000
+                   FileNameGalaxies	        SA
+            FileWithOutputRedshifts	./input/desired_output_redshifts.txt
+                        SpecPhotDir	/mnt/lustre/scratch/virgo/L-Galaxies/SpecPhotTables/
+                         PhotPrefix	PLANCK_BC03
+                        SpecPhotIMF	  Chabrier
+                FileWithFilterNames	./input/Filter_Sloan.txt
+                             McFile	./input/Mc.txt
+                   CoolFunctionsDir	/mnt/lustre/scratch/virgo/L-Galaxies/CoolFunctions/
+                          OutputDir	/mnt/lustre/scratch/petert/L-Galaxies/output/
+                      SimulationDir	/mnt/lustre/scratch/virgo/Trees/MR/
+             LastDarkMatterSnapShot	        63
+                           Hashbits	         8
+                           ScalePos	  0.960558
+                          ScaleMass	   1.11671
+                      FileWithZList	./input/zlist_planck_MR.txt
+                           PartMass	 0.0961104
+                             Sigma8	     0.826
+                              Omega	     0.315
+                        OmegaLambda	     0.685
+                           Hubble_h	     0.673
+                            BoxSize	   480.279
+                         BaryonFrac	     0.155
+         FileWithZList_OriginalCosm	./input/zlist_MR.txt
+              PartMass_OriginalCosm	 0.0860657
+                 Omega_OriginalCosm	      0.25
+           OmegaLambda_OriginalCosm	      0.75
+              Hubble_h_OriginalCosm	      0.73
+               BoxSize_OriginalCosm	      500.
+                StarFormationRecipe	         0
+                     FeedbackRecipe	         0
+                     EjectionRecipe	         1
+              ReIncorporationRecipe	         2
+                     ReionizationOn	         2
+                    BlackHoleGrowth	         0
+                  AGNRadioModeModel	         1
+                   DiskRadiusMethod	         2
+               TrackDiskInstability	         1
+   BlackHoleGrowthInDiskInstability	         0
+                HotGasStripingModel	         1
+              HotGasOnType2Galaxies	         0
+                    StarBurstRecipe	         0
+     BulgeFormationInMinorMergersOn	         1
+                  MetallicityOption	         1
+                    Reionization_z0	       6.5
+                    Reionization_zr	       6.0
+                      SfrEfficiency	     0.025
+                SfrLawPivotVelocity	    1000.0
+                        SfrLawSlope	       0.0
+                        SfrColdCrit	     0.24;
+                 SfrBurstEfficiency	      0.60
+                      SfrBurstSlope	       1.9
+                      AgnEfficiency	    5.3e-3
+                BlackHoleGrowthRate	     0.041
+         BlackHoleDisruptGrowthRate	       0.0
+                  BlackHoleSeedMass	      1e-7
+             BlackHoleAccretionRate	        3.
+            BlackHoleCutoffVelocity	      750.
+           FeedbackReheatingEpsilon	       2.6
+                  ReheatPreVelocity	      480.
+                        ReheatSlope	      0.72
+         FeedbackEjectionEfficiency	      0.62
+                   EjectPreVelocity	      100.
+                         EjectSlope	      0.80
+              ReIncorporationFactor	   3.0e+10
+                        ReincZpower	      2.41
+                 ReincVelocitypower	      3.26
+                              Yield	     0.046
+                    RecycleFraction	      0.43
+                  ThreshMajorMerger	       0.1
+               MergerTimeMultiplier	       2.5
+        RamPressureStrip_CutOffMass	    1.2e+4
+         RamPressureRadiusThreshold	       0.0
+                         FracZtoHot	       0.0
+                           EnergySN	    1.0e51
+                              EtaSN	    8.0e-3
+                   UnitLength_in_cm	3.08568e+24
+                      UnitMass_in_g	 1.989e+43
+           UnitVelocity_in_cm_per_s	    100000
+found 64 defined times in zlist.
+found 64 defined times in zlist.
+requested z=0.00, available snap[58] z=0.000264 & snap[59] z=-0.023571, use snap[58]
+requested z=0.03, available snap[56] z=0.053316 & snap[57] z=0.025612, use snap[57]
+requested z=0.05, available snap[56] z=0.053316 & snap[57] z=0.025612, use snap[56]
+requested z=0.08, available snap[55] z=0.082661 & snap[56] z=0.053316, use snap[55]
+requested z=0.11, available snap[54] z=0.113780 & snap[55] z=0.082661, use snap[54]
+requested z=0.15, available snap[52] z=0.183387 & snap[53] z=0.147548, use snap[53]
+requested z=0.18, available snap[52] z=0.183387 & snap[53] z=0.147548, use snap[52]
+requested z=0.22, available snap[51] z=0.221449 & snap[52] z=0.183387, use snap[51]
+requested z=0.26, available snap[50] z=0.262623 & snap[51] z=0.221449, use snap[50]
+requested z=0.31, available snap[48] z=0.352951 & snap[49] z=0.306211, use snap[49]
+requested z=0.35, available snap[48] z=0.352951 & snap[49] z=0.306211, use snap[48]
+requested z=0.50, available snap[45] z=0.513287 & snap[46] z=0.456079, use snap[45]
+requested z=0.75, available snap[41] z=0.783975 & snap[42] z=0.709089, use snap[41]
+requested z=1.00, available snap[38] z=1.041466 & snap[39] z=0.949732, use snap[38]
+requested z=1.50, available snap[33] z=1.612945 & snap[34] z=1.481728, use snap[34]
+requested z=2.00, available snap[30] z=2.070046 & snap[31] z=1.906216, use snap[30]
+requested z=2.50, available snap[27] z=2.642801 & snap[28] z=2.437088, use snap[28]
+requested z=3.00, available snap[25] z=3.105276 & snap[26] z=2.865033, use snap[25]
+requested z=3.50, available snap[23] z=3.646797 & snap[24] z=3.365268, use snap[24]
+requested z=4.00, available snap[21] z=4.282843 & snap[22] z=3.951917, use snap[22]
+requested z=4.50, available snap[20] z=4.642067 & snap[21] z=4.282843, use snap[20]
+requested z=5.00, available snap[19] z=5.032382 & snap[20] z=4.642067, use snap[19]
+requested z=6.00, available snap[16] z=6.421481 & snap[17] z=5.918548, use snap[17]
+requested z=7.00, available snap[14] z=7.567806 & snap[15] z=6.969652, use snap[15]
+requested z=8.00, available snap[13] z=8.220924 & snap[14] z=7.567806, use snap[13]
+requested z=9.00, available snap[11] z=9.715587 & snap[12] z=8.934729, use snap[12]
+cooling functions read.
+
+Max number of SFH bins used = 20
+reading file /mnt/lustre/scratch/virgo/L-Galaxies/SpecPhotTables//PhotTables/PLANCK_BC03_Chabrier_Phot_Table_MR_Magus_m0.0001.dat 
+reading file /mnt/lustre/scratch/virgo/L-Galaxies/SpecPhotTables//PhotTables/PLANCK_BC03_Chabrier_Phot_Table_MR_Maggs_m0.0001.dat 
+reading file /mnt/lustre/scratch/virgo/L-Galaxies/SpecPhotTables//PhotTables/PLANCK_BC03_Chabrier_Phot_Table_MR_Magrs_m0.0001.dat 
+reading file /mnt/lustre/scratch/virgo/L-Galaxies/SpecPhotTables//PhotTables/PLANCK_BC03_Chabrier_Phot_Table_MR_Magis_m0.0001.dat 
+reading file /mnt/lustre/scratch/virgo/L-Galaxies/SpecPhotTables//PhotTables/PLANCK_BC03_Chabrier_Phot_Table_MR_Magzs_m0.0001.dat 
+reading file /mnt/lustre/scratch/virgo/L-Galaxies/SpecPhotTables//PhotTables/PLANCK_BC03_Chabrier_Phot_Table_MR_Magus_m0.0004.dat 
+reading file /mnt/lustre/scratch/virgo/L-Galaxies/SpecPhotTables//PhotTables/PLANCK_BC03_Chabrier_Phot_Table_MR_Maggs_m0.0004.dat 
+reading file /mnt/lustre/scratch/virgo/L-Galaxies/SpecPhotTables//PhotTables/PLANCK_BC03_Chabrier_Phot_Table_MR_Magrs_m0.0004.dat 
+reading file /mnt/lustre/scratch/virgo/L-Galaxies/SpecPhotTables//PhotTables/PLANCK_BC03_Chabrier_Phot_Table_MR_Magis_m0.0004.dat 
+reading file /mnt/lustre/scratch/virgo/L-Galaxies/SpecPhotTables//PhotTables/PLANCK_BC03_Chabrier_Phot_Table_MR_Magzs_m0.0004.dat 
+reading file /mnt/lustre/scratch/virgo/L-Galaxies/SpecPhotTables//PhotTables/PLANCK_BC03_Chabrier_Phot_Table_MR_Magus_m0.0040.dat 
+reading file /mnt/lustre/scratch/virgo/L-Galaxies/SpecPhotTables//PhotTables/PLANCK_BC03_Chabrier_Phot_Table_MR_Maggs_m0.0040.dat 
+reading file /mnt/lustre/scratch/virgo/L-Galaxies/SpecPhotTables//PhotTables/PLANCK_BC03_Chabrier_Phot_Table_MR_Magrs_m0.0040.dat 
+reading file /mnt/lustre/scratch/virgo/L-Galaxies/SpecPhotTables//PhotTables/PLANCK_BC03_Chabrier_Phot_Table_MR_Magis_m0.0040.dat 
+reading file /mnt/lustre/scratch/virgo/L-Galaxies/SpecPhotTables//PhotTables/PLANCK_BC03_Chabrier_Phot_Table_MR_Magzs_m0.0040.dat 
+reading file /mnt/lustre/scratch/virgo/L-Galaxies/SpecPhotTables//PhotTables/PLANCK_BC03_Chabrier_Phot_Table_MR_Magus_m0.0080.dat 
+reading file /mnt/lustre/scratch/virgo/L-Galaxies/SpecPhotTables//PhotTables/PLANCK_BC03_Chabrier_Phot_Table_MR_Maggs_m0.0080.dat 
+reading file /mnt/lustre/scratch/virgo/L-Galaxies/SpecPhotTables//PhotTables/PLANCK_BC03_Chabrier_Phot_Table_MR_Magrs_m0.0080.dat 
+reading file /mnt/lustre/scratch/virgo/L-Galaxies/SpecPhotTables//PhotTables/PLANCK_BC03_Chabrier_Phot_Table_MR_Magis_m0.0080.dat 
+reading file /mnt/lustre/scratch/virgo/L-Galaxies/SpecPhotTables//PhotTables/PLANCK_BC03_Chabrier_Phot_Table_MR_Magzs_m0.0080.dat 
+reading file /mnt/lustre/scratch/virgo/L-Galaxies/SpecPhotTables//PhotTables/PLANCK_BC03_Chabrier_Phot_Table_MR_Magus_m0.0200.dat 
+reading file /mnt/lustre/scratch/virgo/L-Galaxies/SpecPhotTables//PhotTables/PLANCK_BC03_Chabrier_Phot_Table_MR_Maggs_m0.0200.dat 
+reading file /mnt/lustre/scratch/virgo/L-Galaxies/SpecPhotTables//PhotTables/PLANCK_BC03_Chabrier_Phot_Table_MR_Magrs_m0.0200.dat 
+reading file /mnt/lustre/scratch/virgo/L-Galaxies/SpecPhotTables//PhotTables/PLANCK_BC03_Chabrier_Phot_Table_MR_Magis_m0.0200.dat 
+reading file /mnt/lustre/scratch/virgo/L-Galaxies/SpecPhotTables//PhotTables/PLANCK_BC03_Chabrier_Phot_Table_MR_Magzs_m0.0200.dat 
+reading file /mnt/lustre/scratch/virgo/L-Galaxies/SpecPhotTables//PhotTables/PLANCK_BC03_Chabrier_Phot_Table_MR_Magus_m0.0500.dat 
+reading file /mnt/lustre/scratch/virgo/L-Galaxies/SpecPhotTables//PhotTables/PLANCK_BC03_Chabrier_Phot_Table_MR_Maggs_m0.0500.dat 
+reading file /mnt/lustre/scratch/virgo/L-Galaxies/SpecPhotTables//PhotTables/PLANCK_BC03_Chabrier_Phot_Table_MR_Magrs_m0.0500.dat 
+reading file /mnt/lustre/scratch/virgo/L-Galaxies/SpecPhotTables//PhotTables/PLANCK_BC03_Chabrier_Phot_Table_MR_Magis_m0.0500.dat 
+reading file /mnt/lustre/scratch/virgo/L-Galaxies/SpecPhotTables//PhotTables/PLANCK_BC03_Chabrier_Phot_Table_MR_Magzs_m0.0500.dat 
+writing sfh bins to /mnt/lustre/scratch/petert/L-Galaxies/output//SFH_Bins
+
+At 'join_galaxies', join_galaxies_of_progenitors()/code/main.c/694: Allocation = 585.902 Mbyte (on task=0)
+
+------------------------ Allocated Memory Blocks----------------------------------------
+Task   Nr F          Variable      MBytes   Cumulative         Function/File/Linenumber
+----------------------------------------------------------------------------------------
+   0    0 0         sfh_times      0.0210       0.0210  write_sfh_bins()/code/save.c/719
+   0    1 0     FileToProcess      0.0000       0.0210  main()/code/main.c/129
+   0    2 0     TaskToProcess      0.0000       0.0211  main()/code/main.c/130
+   0    3 0       TreeAuxData    580.1757     580.1967  load_all_auxdat()/code/update_typ/219
+   0    4 0        TreeNHalos      0.1162     580.3130  load_tree_table()/code/io_tree.c/123
+   0    5 0     TreeFirstHalo      0.1162     580.4292  load_tree_table()/code/io_tree.c/124
+   0    6 0      TreeNgals[n]      3.0217     583.4509  load_tree_table()/code/io_tree.c/125
+   0    7 0              Halo      0.0229     583.4738  load_tree()/code/io_tree.c/297
+   0    8 0           HaloAux      0.0141     583.4879  load_tree()/code/io_tree.c/309
+   0    9 1           HaloGal      0.0180     583.5058  load_tree()/code/io_tree.c/326
+   0   10 1       HaloGalHeap      0.0001     583.5059  load_tree()/code/io_tree.c/327
+   0   11 1               Gal      2.3956     585.9015  load_tree()/code/io_tree.c/332
+----------------------------------------------------------------------------------------
+
+done tree file 171 in 1min and 39s
+

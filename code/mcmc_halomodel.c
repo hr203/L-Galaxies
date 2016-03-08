@@ -1,3 +1,4 @@
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -15,8 +16,6 @@
 #include <gsl/gsl_matrix.h>
 #include <gsl/gsl_odeiv.h>
 #include <gsl/gsl_spline.h>
-#include <gsl/gsl_multimin.h>
-#include <gsl/gsl_multifit.h>
 
 #include "allvars.h"
 #include "mcmc_vars.h"
@@ -25,24 +24,11 @@
 
 #define WORKSIZE 100000
 #define PI 3.14159
-#define xmin 0.0
 #ifdef MCRIT
-#define xmax 6
+#define xrvir 6
 #else
-#define xmax 5.
+#define xrvir 3.16
 #endif
-#define pow_ns 1.00
-#define kmax 1e4
-#ifdef PROJLIMITS
-#define pimin 0.0
-#define pimax 40.0
-#endif
-#define pa_low -2.0
-#define pa_high 0.47712125 //log10(3)
-#define pb_low -1.0
-#define pb_high 1.0
-#define pc_low -1.0
-#define pc_high 1.5
 
 void halomodel(double* r_arr,double* proj_arr,float masslimit_low, float masslimit_high,int snap) {
   int i;
@@ -50,17 +36,9 @@ void halomodel(double* r_arr,double* proj_arr,float masslimit_low, float masslim
   int extralin=16;
   double k,p1h,p2h,m10,m11;
   double kbin=6./79.;
-  double kstart=-2;
   double r,corrtmp;
   double *rCorrTable,*CorrTable;
-  double Rhalo_cc,Rhalo_cs,Rhalo_ss,pcorr_cc,pcorr_cs,pcorr_ss;
-  double *P2HTable_cc;
-  double *P2HTable_cs;
-  double *P2HTable_ss;
-  double *kPcorrTable;
-  double *PcorrTable;
   gsl_set_error_handler_off();
-  setbuf(stdout,NULL);
   cutoff_low=malloc(6*sizeof(double));
   cutoff_high=malloc(6*sizeof(double));
   init_numgal(masslimit_low,masslimit_high,snap);
@@ -68,63 +46,16 @@ void halomodel(double* r_arr,double* proj_arr,float masslimit_low, float masslim
   PowerTable=malloc((NK+extralin)*sizeof(double));
   kPowerTable=malloc((NK+extralin)*sizeof(double));
   m10=Mcensat(1,1,0);
-  P2HTable_cc=malloc((NK+extralin)*sizeof(double));
-  P2HTable_cs=malloc((NK+extralin)*sizeof(double));
-  P2HTable_ss=malloc((NK+extralin)*sizeof(double));
-  Rhalo_cc=2*calc_mean_rhalo_simple(0,0)/calc_mean_rhalo_simple(0,1);
-  Rhalo_ss=2*calc_mean_rhalo_simple(1,0)/calc_mean_rhalo_simple(1,1);
-  Rhalo_cs=0.5*(Rhalo_cc+Rhalo_ss);
   for (i=0; i<NK+extralin; i++) {
-    if (i>2*extralin) k=pow(10.,(i-extralin)*kbin+kstart);
-    else k=pow(10.,i*0.5*kbin+kstart);
+    if (i>2*extralin) k=pow(10.,(i-extralin)*kbin-2.);
+    else k=pow(10.,i*0.5*kbin-2.);
     if (i>0 && kPowerTable[i-1]>2) k=pow(10.,kPowerTable[i-1]+2.044/6.);
-    if (k>=0.01) p1h=2*Mcensat(k,0,1)+Mcensat(k,0,2);
-    else p1h=0.0;
+    p1h=2*Mcensat(k,0,1)+Mcensat(k,0,2);
     m11=Mcensat(k,1,1);
     p2h=PowerSpec(k)*(m10*m10+2*m10*m11+m11*m11);
-    P2HTable_cc[i]=log10(PowerSpec(k)*m10*m10);
-    P2HTable_cs[i]=log10(PowerSpec(k)*2*m10*m11);
-    P2HTable_ss[i]=log10(PowerSpec(k)*m11*m11);
     kPowerTable[i]=log10(k);
-    PowerTable[i]=log10((p1h+p2h)/(gsl_spline_eval(ellipSpline,kPowerTable[i],ellipAcc)+1)/(gsl_spline_eval(alignSpline,kPowerTable[i],alignAcc)+1));
+    PowerTable[i]=log10((p1h+p2h)/(gsl_spline_eval(ellipSpline,kPowerTable[i],ellipAcc)+1));
   } //for
-  Twopow_ccAcc=gsl_interp_accel_alloc();
-  Twopow_ccSpline=gsl_spline_alloc(gsl_interp_cspline,(NK+extralin));
-  gsl_spline_init(Twopow_ccSpline,kPowerTable,P2HTable_cc,(NK+extralin));
-  Twopow_csAcc=gsl_interp_accel_alloc();
-  Twopow_csSpline=gsl_spline_alloc(gsl_interp_cspline,(NK+extralin));
-  gsl_spline_init(Twopow_csSpline,kPowerTable,P2HTable_cs,(NK+extralin));
-  Twopow_ssAcc=gsl_interp_accel_alloc();
-  Twopow_ssSpline=gsl_spline_alloc(gsl_interp_cspline,(NK+extralin));
-  gsl_spline_init(Twopow_ssSpline,kPowerTable,P2HTable_ss,(NK+extralin));
-  PcorrTable=malloc((NK+extralin)*sizeof(double));
-  kPcorrTable=malloc((NK+extralin)*sizeof(double));
-  for (i=0; i<NK+extralin; ++i) {
-    if (i>2*extralin) k=pow(10.,(i-extralin)*kbin+kstart);
-    else k=pow(10.,i*0.5*kbin+kstart);
-    if (i>0 && kPowerTable[i-1]>2) k=pow(10.,kPowerTable[i-1]+2.044/6.);
-    kPcorrTable[i]=log10(k);
-    if (k<4*PI/Rhalo_cc) {
-      pcorr_cc=min(4*PI/3.*pow(Rhalo_cc,3)*(pconv_W(k,Rhalo_cc,0)+TopHatWindow(k*Rhalo_cc)),TwoPowerSpec(k,0));
-      if (Rhalo_cs>0)
-pcorr_cs=min((mugal_qawo(k,4*PI/3.*Delta*rho_mean*pow(Rhalo_cs,3))-TopHatWindow(k*Rhalo_cs/Delta_invth))*4*PI/3.*pow(Rhalo_cs,3)*(pconv_W(k,Rhalo_cs,1)+TopHatWindow(k*Rhalo_cs)),TwoPowerSpec(k,1));
-      else pcorr_cs=0;
-      if (Rhalo_ss>0)
-pcorr_ss=min((pow(mugal_qawo(k,4*PI/3.*Delta*rho_mean*pow(Rhalo_ss,3)),2)-pow(TopHatWindow(k*Rhalo_ss/Delta_invth),2))*4*PI/3.*pow(Rhalo_ss,3)*(pconv_W(k,Rhalo_ss,2)+TopHatWindow(k*Rhalo_ss)),TwoPowerSpec(k,2));
-      else pcorr_ss=0;
-    } //if
-    else {
-      pcorr_cc=TwoPowerSpec(k,0);
-      if (Rhalo_cs>0) pcorr_cs=TwoPowerSpec(k,1);
-      else pcorr_cs=0;
-      if (Rhalo_ss>0) pcorr_ss=TwoPowerSpec(k,2);
-      else pcorr_ss=0;
-    } //else
-    PcorrTable[i]=pcorr_cc+pcorr_cs+pcorr_ss;
-  } //for
-  TwopcorrAcc=gsl_interp_accel_alloc();
-  TwopcorrSpline=gsl_spline_alloc(gsl_interp_cspline,(NK+extralin));
-  gsl_spline_init(TwopcorrSpline,kPcorrTable,PcorrTable,(NK+extralin));
   gsl_spline_free(pcSpline);
   gsl_interp_accel_free(pcAcc);
   gsl_spline_free(pbSpline);
@@ -151,7 +82,7 @@ pcorr_ss=min((pow(mugal_qawo(k,4*PI/3.*Delta*rho_mean*pow(Rhalo_ss,3)),2)-pow(To
   sprintf(buf,"pow_%.2f-%.2f_%d.dat",mingalmass,maxgalmass,snap);
   fd=fopen(buf,"w");
   for (i=0; i<1000; ++i) {
-    fprintf(fd,"%g %g\n",pow(10.,0.001*i*5-2),pow(10.,gsl_spline_eval(NewpowSpline,0.001*i*5-2,NewpowAcc))-gsl_spline_eval(TwopcorrSpline,0.001*i*5-2,TwopcorrAcc));
+    fprintf(fd,"%g   %g\n",pow(10.,0.001*i*5-2),pow(10.,gsl_spline_eval(NewpowSpline,0.001*i*5-2,NewpowAcc)));
   } //for
   fclose(fd);
 #endif
@@ -168,7 +99,7 @@ pcorr_ss=min((pow(mugal_qawo(k,4*PI/3.*Delta*rho_mean*pow(Rhalo_ss,3)),2)-pow(To
   sprintf(buf,"corr_%.2f-%.2f_%d.dat",mingalmass,maxgalmass,snap);
   fd=fopen(buf,"w");
   for (i=0; i<1000; ++i) {
-    fprintf(fd,"%g %g\n",pow(10.,0.001*i*5.785-3),gsl_spline_eval(CorrSpline,pow(10.,0.001*i*5.785-3),CorrAcc));
+    fprintf(fd,"%g   %g\n",pow(10.,0.001*i*5.785-3),gsl_spline_eval(CorrSpline,pow(10.,0.001*i*5.785-3),CorrAcc));
   } //for
   fclose(fd);
 #endif
@@ -190,145 +121,14 @@ pcorr_ss=min((pow(mugal_qawo(k,4*PI/3.*Delta*rho_mean*pow(Rhalo_ss,3)),2)-pow(To
   gsl_interp_accel_free(CorrAcc);
   gsl_spline_free(NewpowSpline);
   gsl_interp_accel_free(NewpowAcc);
-  gsl_spline_free(TwopcorrSpline);
-  gsl_interp_accel_free(TwopcorrAcc);
-  gsl_spline_free(Twopow_ssSpline);
-  gsl_interp_accel_free(Twopow_ssAcc);
-  gsl_spline_free(Twopow_csSpline);
-  gsl_interp_accel_free(Twopow_csAcc);
-  gsl_spline_free(Twopow_ccSpline);
-  gsl_interp_accel_free(Twopow_ccAcc);
-  free(kPcorrTable);
-  free(PcorrTable);
-  free(P2HTable_ss);
-  free(P2HTable_cs);
-  free(P2HTable_cc);
   free(kPowerTable);
   free(PowerTable);
   free(cutoff_high);
   free(cutoff_low);
 } //halomodel
 
-double TwoPowerSpec(double k,int censat) {
-  if (censat==0) {
-    if (k>0.01) return pow(10.,gsl_spline_eval(Twopow_ccSpline,log10(k),Twopow_ccAcc));
-    else if (k>1e-4) return
-PowerSpec(k)/PowerSpec(0.01)*pow(10.,gsl_spline_eval(Twopow_ccSpline,-2.,Twopow_ccAcc));
-    else return
-pow(k,pow_ns)/pow(1e-4,pow_ns)*PowerSpec(1e-4)/PowerSpec(0.01)*pow(10.,gsl_spline_eval(Twopow_ccSpline,-2.,Twopow_ccAcc));
-  } //if
-  else if (censat==1) {
-    if (k>0.01) return pow(10.,gsl_spline_eval(Twopow_csSpline,log10(k),Twopow_csAcc));
-    else if (k>1e-4) return
-PowerSpec(k)/PowerSpec(0.01)*pow(10.,gsl_spline_eval(Twopow_csSpline,-2.,Twopow_csAcc));
-    else return
-pow(k,pow_ns)/pow(1e-4,pow_ns)*PowerSpec(1e-4)/PowerSpec(0.01)*pow(10.,gsl_spline_eval(Twopow_csSpline,-2.,Twopow_csAcc));
-  } //else if
-  else {
-    if (k>0.01) return pow(10.,gsl_spline_eval(Twopow_ssSpline,log10(k),Twopow_ssAcc));
-    else if (k>1e-4) return
-PowerSpec(k)/PowerSpec(0.01)*pow(10.,gsl_spline_eval(Twopow_ssSpline,-2.,Twopow_ssAcc));
-    else return
-pow(k,pow_ns)/pow(1e-4,pow_ns)*PowerSpec(1e-4)/PowerSpec(0.01)*pow(10.,gsl_spline_eval(Twopow_ssSpline,-2.,Twopow_ssAcc));
-  } //else
-} //TwoPowerSpec
-
-double pconv_W_P_func(double theta,void *p) {
-  struct conv_W_P_params *params=(struct conv_W_P_params *)p;
-  double k=(params->k);
-  double q=(params->q);
-  int censat=(params->censat);
-  return TwoPowerSpec(sqrt(k*k-2*q*k*cos(theta)+q*q),censat)*sin(theta);
-} //pconv_W_P_func
-
-double pconv_W_func(double lq,void *p) {
-  struct conv_W_params *params=(struct conv_W_params *)p;
-  double k=(params->k);
-  double R=(params->R);
-  int censat=(params->censat);
-  double q=exp(lq);
-  double result=0,abserr,thetamax;
-  double arg=(k*k+q*q-kmax*kmax)/(2.*k*q);
-  if (arg>-1 && arg<1) thetamax=acos(arg);
-  else if (arg<=-1) thetamax=PI;
-  else thetamax=0.;
-  gsl_function F;
-  int status;
-  struct conv_W_P_params params2={ k,q,censat };
-  F.function=&pconv_W_P_func;
-  F.params=&params2;
-  gsl_integration_workspace *w=gsl_integration_workspace_alloc(WORKSIZE);
-  gsl_integration_qag(&F,0.,thetamax,0,1.0e-3,WORKSIZE,GSL_INTEG_GAUSS41,w,&result,&abserr);
-  gsl_integration_workspace_free(w);
-  return TopHatWindow(q*R)*result*q*q*q;
-} //pconv_W_func
-
-double pconv_W(double k,double R,int censat) {
-  double result=0,abserr;
-  gsl_function F;
-  gsl_integration_workspace *w=gsl_integration_workspace_alloc(WORKSIZE);
-  struct conv_W_params params={ k,R,censat };
-  F.function=&pconv_W_func;
-  F.params=&params;
-  gsl_integration_qag(&F,log(pow(10.,-8.)),log(k+kmax),0,1.0e-3,WORKSIZE,GSL_INTEG_GAUSS41,w,&result,&abserr);
-  gsl_integration_workspace_free(w);
-  return result/(4*PI*PI);
-} //pconv_W
-
-double calc_mean_rhalo_simple_func(double lm,void *p) {
-  struct rhalo_params *params=(struct rhalo_params *)p;
-  int censat=(params->censat);
-  int norm=(params->norm);
-  double m=exp(lm);
-  double rterm=1.;
-  if (norm==0) {
-    rterm=Delta_invth*Radius(m);
-    if (censat>0)
-rterm-=min(calc_mean_rsat(log10(m),1)/calc_mean_rsat(log10(m),0),1.)*Delta_invth*Radius(m);
-  } //if
-  return nbargal(m)*NgalF(m,2+censat)*m*rterm;
-} //calc_mean_rhalo_simple_func
-
-double calc_mean_rhalo_simple(int censat,int norm) {
-  double result=0,abserr;
-  gsl_function F;
-  gsl_integration_workspace *w=gsl_integration_workspace_alloc(WORKSIZE);
-  struct rhalo_params params={ censat,norm };
-  F.function=&calc_mean_rhalo_simple_func;
-  F.params=&params;
-  gsl_integration_qag(&F,log(pow(10.,cutoff_low[2+censat])),log(pow(10.,cutoff_high[2+censat])),0,1.0e-3,WORKSIZE,GSL_INTEG_GAUSS41,w,&result,&abserr);
-  gsl_integration_workspace_free(w);
-  return result;
-} //calc_mean_rhalo_simple
-
-double calc_mean_rsat_func(double lr,void *p) {
-  struct rsat_params *params=(struct rsat_params *)p;
-  double lm=(params->lm);
-  double pa=pow(10.,pa_eval(lm));
-  double pb=pow(10.,pa_eval(lm));
-  double pc=pow(10.,pa_eval(lm));
-  int extrar=(params->extrar);
-  double r=pow(10.,lr);
-  double nm=pow(r/pb,pa)/r*exp(-pow(r/pb,pc));
-  if (extrar) nm*=r;
-  return r*nm;
-} //calc_mean_rsat_func
-
-double calc_mean_rsat(double lm,int extrar) {
-  struct rsat_params params={ lm,extrar };
-  double result=0,abserr;
-  gsl_function F;
-  gsl_integration_workspace *w=gsl_integration_workspace_alloc(WORKSIZE);
-  F.function=&calc_mean_rsat_func;
-  F.params=&params;
-  gsl_integration_qag(&F,-4.,log10(xmax),0,1.0e-3,WORKSIZE,GSL_INTEG_GAUSS51,w,&result,&abserr);
-  gsl_integration_workspace_free(w);
-  return result;
-} //calc_mean_rsat
-
 double NewPowerSpec(double k) {
-  //return pow(10.,gsl_spline_eval(NewpowSpline,log10(k),NewpowAcc));
-  return pow(10.,gsl_spline_eval(NewpowSpline,log10(k),NewpowAcc))-gsl_spline_eval(TwopcorrSpline,log10(k),TwopcorrAcc);
+  return pow(10.,gsl_spline_eval(NewpowSpline,log10(k),NewpowAcc));
 } //NewPowerSpec
 
 double corr_qawo_func(double k,void *params) {
@@ -342,8 +142,7 @@ double corr_qawo(double r,double a,double L) {
   F.function=&corr_qawo_func;
   F.params=0;
   gsl_integration_workspace *w=gsl_integration_workspace_alloc(WORKSIZE);
-  gsl_integration_qawo_table
-*t=gsl_integration_qawo_table_alloc(r,L,GSL_INTEG_SINE,40);
+  gsl_integration_qawo_table *t=gsl_integration_qawo_table_alloc(r,L,GSL_INTEG_SINE,40);
   status=gsl_integration_qawo(&F,a,0,1.0e-3,WORKSIZE,w,t,&result,&abserr);
   gsl_integration_qawo_table_free(t);
   gsl_integration_workspace_free(w);
@@ -361,11 +160,7 @@ double proj_corr(double sigma) {
   gsl_integration_workspace *w=gsl_integration_workspace_alloc(WORKSIZE);
   F.function=&proj_corr_func;
   F.params=&sigma;
-#ifndef PROJLIMITS
   gsl_integration_qag(&F,sigma,600.,0,1.0e-3,WORKSIZE,GSL_INTEG_GAUSS51,w,&result,&abserr);
-#else
-  gsl_integration_qag(&F,sqrt(pimin*pimin+sigma*sigma),sqrt(pimax*pimax+sigma*sigma),0,1.0e-3,WORKSIZE,GSL_INTEG_GAUSS51,w,&result,&abserr);
-#endif
   gsl_integration_workspace_free(w);
   return result;
 } //proj_corr
@@ -389,7 +184,7 @@ double TopHatWindow(double kr) {
   double kr2,kr3;
   kr2=kr*kr;
   kr3=kr2*kr;
-  if (kr<1e-8) return 1.;
+  if (kr<1e-8) return 0;
   return 3.*(sin(kr)/kr3-cos(kr)/kr2);
 } //TopHatWindow
 
@@ -413,6 +208,25 @@ double TopHatSigma2(double R) {
 double Mass(double R) {
   return 4.0*PI*R*R*R/3.0*Omega*rho_c;
 } //Mass
+
+double lnSigma2(double lR,void *params) {
+  double M=Mass(exp(lR));
+  return log(Sigma2(M));
+} //lnSigma2
+
+double lnSigma2lnM(double lm,void *params) {
+  return log(Sigma2(exp(lm)));
+} //lnSigma2lnM
+
+double gammaM(double m) {
+  gsl_function F;
+  double result,abserr,lm;
+  lm=log(m);
+  F.function=&lnSigma2lnM;
+  F.params=0;
+  gsl_deriv_central(&F,lm,1e-8,&result,&abserr);
+  return -result;
+} //gammaM
 
 double nbargal(double m) {
   double lm=log10(m);
@@ -455,7 +269,7 @@ double mugal_qawo_func(double r,void *p) {
   double pa=(params->pa);
   double pb=(params->pb);
   double pc=(params->pc);
-  double nm=pow(r/pb,pa)/pow(r,3)*exp(-pow(r/pb,pc));
+  double nm=pow(r/pb,pa*pc)/pow(r,3)*exp(-pow(r/pb,pc));
   return r*nm;
 } //mugal_qawo_func
 
@@ -465,8 +279,7 @@ double mugal_qawo(double k,double m) {
   double pa=pow(10.,pa_eval(log10(m)));
   double pb=pow(10.,pb_eval(log10(m)));
   double pc=pow(10.,pc_eval(log10(m)));
-  double
-norm=pc/(rvir3*4*PI*exp(gsl_sf_lngamma(pa/pc)+log(gsl_sf_gamma_inc_P(pa/pc,pow(xmax/pb,pc)))));
+  double norm=pc/(rvir3*4*PI*exp(gsl_sf_lngamma(pa)+log(gsl_sf_gamma_inc_P(pa,pow(xrvir/pb,pc)))));
   struct mugal_qawo_params params={ pa,pb,pc };
   double result=0,abserr;
   gsl_function F;
@@ -474,8 +287,7 @@ norm=pc/(rvir3*4*PI*exp(gsl_sf_lngamma(pa/pc)+log(gsl_sf_gamma_inc_P(pa/pc,pow(x
   F.function=&mugal_qawo_func;
   F.params=&params;
   gsl_integration_workspace *w=gsl_integration_workspace_alloc(WORKSIZE);
-  gsl_integration_qawo_table
-*t=gsl_integration_qawo_table_alloc(k*rvir,xmax,GSL_INTEG_SINE,25);
+  gsl_integration_qawo_table *t=gsl_integration_qawo_table_alloc(k*rvir,xrvir,GSL_INTEG_SINE,25);
   status=gsl_integration_qawo(&F,0.0,0,1.0e-3,WORKSIZE,w,t,&result,&abserr);
   gsl_integration_qawo_table_free(t);
   gsl_integration_workspace_free(w);
@@ -494,27 +306,39 @@ double NgalF(double m,int j) { //0: ngal, 1: ngal*(ngal-1), 2: ncen, 3: nsat, 4:
 } //NgalF
 
 double pa_eval(double m) {
-  double
-value=gsl_spline_eval(paSpline,min(max(m,parscutoff_low),parscutoff_high),paAcc);
-  if (value>=pa_low && value<=pa_high) return value;
-  else if (value<pa_low) return pa_low;
-  else return pa_high;
+  double value;
+  if (m<parscutoff_low) return gsl_spline_eval(paSpline,parscutoff_low,paAcc);
+  else if (m>parscutoff_high) return gsl_spline_eval(paSpline,parscutoff_high,paAcc);
+  else {
+    value=gsl_spline_eval(paSpline,m,paAcc);
+    if (value>=-2. && value<=2.) return value;
+    else if (value<-2.) return -2.;
+    else return 2.;
+  } //else
 } //pa_eval
 
 double pb_eval(double m) {
-  double
-value=gsl_spline_eval(pbSpline,min(max(m,parscutoff_low),parscutoff_high),pbAcc);
-  if (value>=pb_low && value<=pb_high) return value;
-  else if (value<pb_low) return pb_low;
-  else return pb_high;
+  double value;
+  if (m<parscutoff_low) return gsl_spline_eval(pbSpline,parscutoff_low,pbAcc);
+  else if (m>parscutoff_high) return gsl_spline_eval(pbSpline,parscutoff_high,pbAcc);
+  else {
+    value=gsl_spline_eval(pbSpline,m,pbAcc);
+    if (value>=-1. && value<=0.5) return value;
+    else if (value<-1.) return -1.;
+    else return 0.5;
+  } //else
 } //pb_eval
 
 double pc_eval(double m) {
-  double
-value=gsl_spline_eval(pcSpline,min(max(m,parscutoff_low),parscutoff_high),pcAcc);
-  if (value>=pc_low && value<=pc_high) return value;
-  else if (value<pc_low) return pc_low;
-  else return pc_high;
+  double value;
+  if (m<parscutoff_low) return gsl_spline_eval(pcSpline,parscutoff_low,pcAcc);
+  else if (m>parscutoff_high) return gsl_spline_eval(pcSpline,parscutoff_high,pcAcc);
+  else {
+    value=gsl_spline_eval(pcSpline,m,pcAcc);
+    if (value>=-2. && value<=2.) return value;
+    else if (value<-2.) return -2.;
+    else return 2.;
+  } //else
 } //pc_eval
 
 double Mcensat_func(double lm,void *p) {
@@ -529,10 +353,8 @@ double Mcensat_func(double lm,void *p) {
     else if (j==1) return nbargal(m)*NgalF(m,4)/pow(ngal_mean,2)*mugal_qawo(k,m)*m;
     else return nbargal(m)*NgalF(m,5)/pow(ngal_mean,2)*pow(mugal_qawo(k,m),2)*m;
 #else
-    else if (j==1) return
-nbargal(m)*NgalF(m,4)/pow(ngal_mean,2)*(mugal_qawo(k,m)-TopHatWindow(k*Radius(m)))*m;
-    else return
-nbargal(m)*NgalF(m,5)/pow(ngal_mean,2)*(pow(mugal_qawo(k,m),2)-pow(TopHatWindow(k*Radius(m)),2))*m;
+    else if (j==1) return nbargal(m)*NgalF(m,4)/pow(ngal_mean,2)*(mugal_qawo(k,m)-TopHatWindow(k*Radius(m)))*m;
+    else return nbargal(m)*NgalF(m,5)/pow(ngal_mean,2)*(pow(mugal_qawo(k,m),2)-pow(TopHatWindow(k*Radius(m)),2))*m;
 #endif
   } //if
   else {
@@ -640,37 +462,6 @@ void init_power() {
   gsl_spline_init(ellipSpline,kPowerTable,PowerTable,NPowerTable);
   free(kPowerTable);
   free(PowerTable);
-  NPowerTable=0;
-  sprintf(buf,"%s/align_corr.dat",MCMCHaloModelDir);
-  if(!(fd=fopen(buf,"r"))) {
-    printf("Can't read correction spectrum in file '%s'.\n",buf);
-    exit(0);
-  } //if
-  do {
-    if (fscanf(fd," %lg %lg ",&k,&p)==2) NPowerTable++;
-    else break;
-  } //do
-  while(1);
-  fclose(fd);
-  PowerTable=malloc(NPowerTable*sizeof(double));
-  kPowerTable=malloc(NPowerTable*sizeof(double));
-  fd=fopen(buf,"r");
-  NPowerTable=0;
-  do { //k and Delta
-    if (fscanf(fd," %lg %lg ",&k,&p)==2) {
-      kPowerTable[NPowerTable]=k;
-      PowerTable[NPowerTable]=p;
-      NPowerTable++;
-    } //if
-    else break;
-  } //do
-  while(1);
-  fclose(fd);
-  alignAcc=gsl_interp_accel_alloc();
-  alignSpline=gsl_spline_alloc(gsl_interp_cspline,NPowerTable);
-  gsl_spline_init(alignSpline,kPowerTable,PowerTable,NPowerTable);
-  free(kPowerTable);
-  free(PowerTable);
 } //init_power
 
 void init_sigma() {
@@ -689,24 +480,34 @@ void init_sigma() {
 
 void init_numgal(float masslimit_low, float masslimit_high, int snap) {
   int i,j,jj;
+  double *MassTable;
   int mbin,mbin2,k,found,ncen,nsat;
   int nsat_tot=0;
-  int NMassTable2=6;
-  int *NgalTotal,*NfofTotal,*NgalInRange,*usedbymass;
-  int status;
-  double *MassTable;
   double *masstmp,*patmp,*pbtmp,*pctmp;
   double **NgalTable;
-  double *borders,*radii,*p,*perror,*pberr,*paerr,*pcerr;
+  int NMassTable2=5; //5
+  double borders[6]; //NMassTable2+1
+  double p[3];
+  double perror[3];
+  double *pberr;
+  double *paerr;
+  double *pcerr;
+  double *x;
+  double *y;
+  struct fitvars v;
+  int status;
+  mp_par pars[3];
+  mp_result result;
+  mp_config config;
+  int NRadiusTable=25+(int)(log10(xrvir)/0.1+0.5);
+  double minlogr=-2.5;
+  int rbin,NgalTotalTotal,mstart,mend,NValid;
+  int *NgalTotal,*NfofTotal,**NProfileTable,*usedbymass;
+  double rbinsize=0.1;
   double boxsize=BoxSize;
   double massoffset=log10(2*(G/1e10)/(Delta*Omega*1e4));
-  double r,rvir,relx,rely,relz;
-  double *MassTable2,*pa_m,*pb_m,*pc_m;
-  const gsl_multimin_fdfminimizer_type *T;
-  gsl_multimin_fdfminimizer *s;
-  gsl_vector *abc;
-  gsl_multimin_function_fdf my_func;
-  size_t iter;
+  double logrvir,logr,relx,rely,relz;
+  double *MassTable2,*MassVarTable2,**RadiusTable,**ProfileTable,**ProfileErrTable,*pa_m,*pb_m,*pc_m,*weights;
   for (i=0; i<6; ++i) {
     cutoff_low[i]=0;
     cutoff_high[i]=0;
@@ -719,7 +520,6 @@ void init_numgal(float masslimit_low, float masslimit_high, int snap) {
     NgalAcc[i]=gsl_interp_accel_alloc();
     NgalSpline[i]=gsl_spline_alloc(gsl_interp_cspline,massbins);
   } //for
-  borders=malloc((NMassTable2+1)*sizeof(double));
   MassTable=malloc(massbins*sizeof(double));
   NgalTable=malloc(6*sizeof(double*));
   for (i=0; i<6; ++i) NgalTable[i]=malloc(massbins*sizeof(double));
@@ -731,19 +531,15 @@ void init_numgal(float masslimit_low, float masslimit_high, int snap) {
     for (j=0; j<UsedFofsInSample[snap]; ++j) {
       ncen=0;
       nsat=0;
-      if
-(MCMC_FOF2[j].M_Mean200[snap]>minfofmass+mbin*(maxfofmass-minfofmass)/(double)massbins
-&&
-MCMC_FOF2[j].M_Mean200[snap]<minfofmass+(mbin+1)*(maxfofmass-minfofmass)/(double)massbins)
-{
+      //if (MCMC_FOF2[j].M_Crit200[snap]>minfofmass+mbin*(maxfofmass-minfofmass)/(double)massbins && MCMC_FOF2[j].M_Crit200[snap]<minfofmass+(mbin+1)*(maxfofmass-minfofmass)/(double)massbins) {
+      if (MCMC_FOF2[j].M_Mean200[snap]>minfofmass+mbin*(maxfofmass-minfofmass)/(double)massbins &&
+      		MCMC_FOF2[j].M_Mean200[snap]<minfofmass+(mbin+1)*(maxfofmass-minfofmass)/(double)massbins)
+      {
         i=MCMC_FOF2[j].IndexOfCentralGal[snap];
-        if (i>=0) {
-          if (MCMC_GAL[HashTable[i]].StellarMass[snap]>masslimit_low && MCMC_GAL[HashTable[i]].StellarMass[snap]<=masslimit_high) ncen=1;
-          for (k=1; k<MCMC_GAL[HashTable[i]].ngal[snap]; ++k) {
-            if (MCMC_GAL[HashTable[i+k]].StellarMass[snap]>masslimit_low && MCMC_GAL[HashTable[i+k]].StellarMass[snap]<=masslimit_high) nsat++;
-          } //for
-        } //if
-        MassTable[mbin]+=MCMC_FOF2[j].M_Mean200[snap];
+        if (MCMC_GAL[HashTable[i]].StellarMass[snap]>masslimit_low && MCMC_GAL[HashTable[i]].StellarMass[snap]<=masslimit_high) ncen=1;
+        for (k=1; k<MCMC_GAL[HashTable[i]].ngal[snap]; ++k) {
+          if (MCMC_GAL[HashTable[i+k]].StellarMass[snap]>masslimit_low && MCMC_GAL[HashTable[i+k]].StellarMass[snap]<=masslimit_high) nsat++;
+        } //for
         usedbymass[mbin]++;
       } //if
       NgalTable[0][mbin]+=ncen+nsat;
@@ -755,19 +551,27 @@ MCMC_FOF2[j].M_Mean200[snap]<minfofmass+(mbin+1)*(maxfofmass-minfofmass)/(double
       nsat_tot+=nsat;
     } //for
   } //for
-  for (j=0; j<massbins; ++j) {
-    if (usedbymass[j]>0) MassTable[j]/=usedbymass[j];
-    else MassTable[j]=minfofmass+(j+0.5)*(maxfofmass-minfofmass)/(double)massbins;
-  } //for
+  for (j=0; j<massbins; ++j) MassTable[j]=minfofmass+(j+0.5)*(maxfofmass-minfofmass)/(double)massbins;
   nsat=NgalTable[3][0];
+  //borders[0]=10.;
   if (NgalTable[0][0]>0) {
     char sbuf[1000];
     sprintf(sbuf,"First Ngal mass bin not equal to zero, divergence will ensue.\n");
     terminate(sbuf);
   } //if
+
   borders[0]=minfofmass;
   borders[NMassTable2]=maxfofmass;
-  for (i=1; i<6; ++i) borders[i]=10+i;
+
+  j=1;
+  for (mbin=1; mbin<massbins; ++mbin) {
+    if (nsat<=j*nsat_tot/(double)NMassTable2 && nsat+NgalTable[3][mbin]>j*nsat_tot/(double)NMassTable2) {
+      borders[j]=MassTable[mbin]+(MassTable[mbin]-MassTable[mbin-1])/NgalTable[3][mbin]*(j*nsat_tot/(double)NMassTable2-nsat);
+      j++;
+      if (j==NMassTable2) break;
+    } //if
+    nsat+=NgalTable[3][mbin];
+  } //for
   for (j=0; j<massbins; ++j) {
     if (usedbymass[j]>0) {
       for (i=0; i<6; ++i) NgalTable[i][j]/=usedbymass[j];
@@ -776,12 +580,12 @@ MCMC_FOF2[j].M_Mean200[snap]<minfofmass+(mbin+1)*(maxfofmass-minfofmass)/(double
   for (i=0; i<6; ++i) {
     for (mbin=0; mbin<massbins-1 && cutoff_low[i]==0; ++mbin) {
       if (NgalTable[i][mbin]==0 && NgalTable[i][mbin+1]>0) {
-        cutoff_low[i]=MassTable[mbin];
+	    cutoff_low[i]=MassTable[mbin];
       } //if
     } //for
     for (mbin=massbins-1; mbin>0 && cutoff_high[i]==0; --mbin) {
       if (NgalTable[i][mbin-1]>0 && NgalTable[i][mbin]==0) {
-        cutoff_high[i]=MassTable[mbin];
+	    cutoff_high[i]=MassTable[mbin];
       } //if
     } //for
   } //for
@@ -790,49 +594,83 @@ MCMC_FOF2[j].M_Mean200[snap]<minfofmass+(mbin+1)*(maxfofmass-minfofmass)/(double
   free(NgalTable);
   free(MassTable);
   MassTable2=malloc(NMassTable2*sizeof(double));
+  MassVarTable2=malloc(NMassTable2*sizeof(double));
+  RadiusTable=malloc(NMassTable2*sizeof(double*));
+  NProfileTable=malloc(NMassTable2*sizeof(int*));
+  ProfileTable=malloc(NMassTable2*sizeof(double*));
+  ProfileErrTable=malloc(NMassTable2*sizeof(double*));
+  for (i=0; i<NMassTable2; ++i) {
+    RadiusTable[i]=malloc(NRadiusTable*sizeof(double));
+    NProfileTable[i]=malloc(NRadiusTable*sizeof(int));
+    ProfileTable[i]=malloc(NRadiusTable*sizeof(double));
+    ProfileErrTable[i]=malloc(NRadiusTable*sizeof(double));
+    for (j=0; j<NRadiusTable; ++j) {
+      RadiusTable[i][j]=0;
+      NProfileTable[i][j]=0;
+      ProfileTable[i][j]=0;
+      ProfileErrTable[i][j]=0;
+    } //for
+  } //for
   NgalTotal=malloc(NMassTable2*sizeof(int));
   NfofTotal=malloc(NMassTable2*sizeof(int));
-  NgalInRange=malloc(NMassTable2*sizeof(int));
   for (i=0; i<NMassTable2; ++i) {
-    MassTable2[i]=0;
     NgalTotal[i]=0;
     NfofTotal[i]=0;
-    NgalInRange[i]=0;
+    MassTable2[i]=0;
+    MassVarTable2[i]=0;
   } //for
   for (j=0; j<UsedFofsInSample[snap]; ++j) {
     i=MCMC_FOF2[j].IndexOfCentralGal[snap];
-    if (i>=0) {
-      mbin2=-1;
-      for (jj=1; jj<=NMassTable2; ++jj) {
-        if (MCMC_GAL[HashTable[i]].M_Mean200[snap]<borders[jj]) {
-          mbin2=jj-1;
-          break;
+    for (jj=1; jj<=NMassTable2; ++jj) {
+      //if (MCMC_GAL[HashTable[i]].M_Crit200[snap]<borders[jj]) {
+    	if (MCMC_GAL[HashTable[i]].M_Mean200[snap]<borders[jj]) {
+        mbin2=jj-1;
+        break;
+      } //if
+    } //for
+    if (mbin2>=0 && mbin2<NMassTable2 && MCMC_GAL[HashTable[i]].ngal[snap]>1) {
+      found=0;
+      //logrvir=1./3.*(MCMC_GAL[HashTable[i]].M_Crit200[snap]+massoffset);
+      logrvir=1./3.*(MCMC_GAL[HashTable[i]].M_Mean200[snap]+massoffset);
+      for (jj=1; jj<MCMC_GAL[HashTable[i]].ngal[snap]; ++jj) {
+        if (MCMC_GAL[HashTable[i+jj]].StellarMass[snap]>masslimit_low && MCMC_GAL[HashTable[i+jj]].StellarMass[snap]<=masslimit_high) {
+          found++;
+          relx=min(fabs(MCMC_GAL[HashTable[i+jj]].x[snap]-MCMC_GAL[HashTable[i]].x[snap]),fabs(boxsize-fabs(MCMC_GAL[HashTable[i+jj]].x[snap]-MCMC_GAL[HashTable[i]].x[snap])));
+          rely=min(fabs(MCMC_GAL[HashTable[i+jj]].y[snap]-MCMC_GAL[HashTable[i]].y[snap]),fabs(boxsize-fabs(MCMC_GAL[HashTable[i+jj]].y[snap]-MCMC_GAL[HashTable[i]].y[snap])));
+          relz=min(fabs(MCMC_GAL[HashTable[i+jj]].z[snap]-MCMC_GAL[HashTable[i]].z[snap]),fabs(boxsize-fabs(MCMC_GAL[HashTable[i+jj]].z[snap]-MCMC_GAL[HashTable[i]].z[snap])));
+          logr=0.5*log10(relx*relx+rely*rely+relz*relz);
+          rbin=floor((logr-logrvir-minlogr)/rbinsize);
+          if (rbin>=0 && rbin<NRadiusTable) {
+            RadiusTable[mbin2][rbin]+=logr-logrvir;
+            NProfileTable[mbin2][rbin]++;
+          } //if
         } //if
       } //for
-      if (mbin2>=0 && mbin2<NMassTable2 && MCMC_GAL[HashTable[i]].ngal[snap]>1) {
-        found=0;
-        rvir=pow(10.,(MCMC_GAL[HashTable[i]].M_Mean200[snap]+massoffset)/3.);
-        for (jj=1; jj<MCMC_GAL[HashTable[i]].ngal[snap]; ++jj) {
-          if (MCMC_GAL[HashTable[i+jj]].StellarMass[snap]>masslimit_low && MCMC_GAL[HashTable[i+jj]].StellarMass[snap]<=masslimit_high) {
-            found++;
-            relx=min(fabs(MCMC_GAL[HashTable[i+jj]].x[snap]-MCMC_GAL[HashTable[i]].x[snap]),fabs(boxsize-fabs(MCMC_GAL[HashTable[i+jj]].x[snap]-MCMC_GAL[HashTable[i]].x[snap])));
-            rely=min(fabs(MCMC_GAL[HashTable[i+jj]].y[snap]-MCMC_GAL[HashTable[i]].y[snap]),fabs(boxsize-fabs(MCMC_GAL[HashTable[i+jj]].y[snap]-MCMC_GAL[HashTable[i]].y[snap])));
-            relz=min(fabs(MCMC_GAL[HashTable[i+jj]].z[snap]-MCMC_GAL[HashTable[i]].z[snap]),fabs(boxsize-fabs(MCMC_GAL[HashTable[i+jj]].z[snap]-MCMC_GAL[HashTable[i]].z[snap])));
-            r=sqrt(relx*relx+rely*rely+relz*relz);
-            if (r/rvir>xmin && r/rvir<=xmax) NgalInRange[mbin2]++;
-          } //if
-        } //for
-        if (found>0) {
-          NgalTotal[mbin2]+=found;
-          NfofTotal[mbin2]++;
-          MassTable2[mbin2]+=found*MCMC_GAL[HashTable[i]].M_Mean200[snap];
-        } //if
+      if (found>0) {
+        NgalTotal[mbin2]+=found;
+        NfofTotal[mbin2]++;
+        //MassTable2[mbin2]+=found*MCMC_GAL[HashTable[i]].M_Crit200[snap];
+        //MassVarTable2[mbin2]+=found*SQR(MCMC_GAL[HashTable[i]].M_Crit200[snap]);
+        MassTable2[mbin2]+=found*MCMC_GAL[HashTable[i]].M_Mean200[snap];
+        MassVarTable2[mbin2]+=found*SQR(MCMC_GAL[HashTable[i]].M_Mean200[snap]);
       } //if
     } //if
   } //for
+  NgalTotalTotal=0;
   for (mbin2=0; mbin2<NMassTable2; ++mbin2) {
     if (NgalTotal[mbin2]>0) MassTable2[mbin2]/=NgalTotal[mbin2];
     else MassTable2[mbin2]=0.5*(borders[mbin2]+borders[mbin2+1]);
+    MassVarTable2[mbin2]-=NgalTotal[mbin2]*SQR(MassTable2[mbin2]);
+    MassVarTable2[mbin2]/=(NgalTotal[mbin2]-1);
+    NgalTotalTotal+=NgalTotal[mbin2];
+    for (rbin=0; rbin<NRadiusTable; ++rbin) {
+      if (NProfileTable[mbin2][rbin]>0) {
+	    RadiusTable[mbin2][rbin]/=(double)NProfileTable[mbin2][rbin];
+	    ProfileTable[mbin2][rbin]=(double)NProfileTable[mbin2][rbin]/(NgalTotal[mbin2]*4./3.*PI*(pow(10.,3*((rbin+1)*rbinsize+minlogr))-pow(10.,3*(rbin*rbinsize+minlogr)))*pow(10.,MassTable2[mbin2]+massoffset));
+	    ProfileErrTable[mbin2][rbin]=sqrt(NProfileTable[mbin2][rbin])/(NgalTotal[mbin2]*4./3.*PI*(pow(10.,3*((rbin+1)*rbinsize+minlogr))-pow(10.,3*(rbin*rbinsize+minlogr)))*pow(10.,MassTable2[mbin2]+massoffset));
+      } //if
+      else RadiusTable[mbin2][rbin]=(rbin+0.5)*rbinsize+minlogr;
+    } //for
   } //for
   pa_m=malloc(NMassTable2*sizeof(double));
   pb_m=malloc(NMassTable2*sizeof(double));
@@ -840,85 +678,84 @@ MCMC_FOF2[j].M_Mean200[snap]<minfofmass+(mbin+1)*(maxfofmass-minfofmass)/(double
   paerr=malloc(NMassTable2*sizeof(double));
   pberr=malloc(NMassTable2*sizeof(double));
   pcerr=malloc(NMassTable2*sizeof(double));
-  p=malloc(3*sizeof(double));
-  perror=malloc(3*sizeof(double));
-  my_func.n=3;
-  my_func.f=&my_f;
-  my_func.df=&my_df;
-  my_func.fdf=&my_fdf;
-  abc=gsl_vector_alloc(3);
-  T=gsl_multimin_fdfminimizer_conjugate_pr;
-  s=gsl_multimin_fdfminimizer_alloc(T,3);
+  memset(&result,0,sizeof(result));
+  memset(&config,0,sizeof(config));
+  memset(&pars[0],0,sizeof(pars));
+  pars[0].limited[0]=1;
+  pars[0].limits[0]=-2.;
+  pars[0].limited[1]=1;
+  pars[0].limits[1]=2.;
+  pars[1].limited[0]=1;
+  pars[1].limits[0]=-1.;
+  pars[1].limited[1]=1;
+  pars[1].limits[1]=0.5;
+  pars[2].limited[0]=1;
+  pars[2].limits[0]=-2.;
+  pars[2].limited[1]=1;
+  pars[2].limits[1]=2.;
   for (mbin2=0; mbin2<NMassTable2; ++mbin2) {
-    if (NgalInRange[mbin2]>2) {
-      numrad=NgalInRange[mbin2];
-      radii=malloc(numrad*sizeof(double));
-      NgalInRange[mbin2]=0;
-      for (j=0; j<UsedFofsInSample[snap]; ++j) {
-        i=MCMC_FOF2[j].IndexOfCentralGal[snap];
-        if (i>=0) {
-          if (MCMC_GAL[HashTable[i]].M_Mean200[snap]>=borders[mbin2] &&
-        		  MCMC_GAL[HashTable[i]].M_Mean200[snap]<borders[mbin2+1] &&
-				  MCMC_GAL[HashTable[i]].ngal[snap]>1) {
-            rvir=pow(10.,(MCMC_GAL[HashTable[i]].M_Mean200[snap]+massoffset)/3.);
-            for (jj=1; jj<MCMC_GAL[HashTable[i]].ngal[snap]; ++jj) {
-              if (MCMC_GAL[HashTable[i+jj]].StellarMass[snap]>masslimit_low &&
-            		  MCMC_GAL[HashTable[i+jj]].StellarMass[snap]<=masslimit_high) {
-                relx=min(fabs(MCMC_GAL[HashTable[i+jj]].x[snap]-MCMC_GAL[HashTable[i]].x[snap]),fabs(boxsize-fabs(MCMC_GAL[HashTable[i+jj]].x[snap]-MCMC_GAL[HashTable[i]].x[snap])));
-                rely=min(fabs(MCMC_GAL[HashTable[i+jj]].y[snap]-MCMC_GAL[HashTable[i]].y[snap]),fabs(boxsize-fabs(MCMC_GAL[HashTable[i+jj]].y[snap]-MCMC_GAL[HashTable[i]].y[snap])));
-                relz=min(fabs(MCMC_GAL[HashTable[i+jj]].z[snap]-MCMC_GAL[HashTable[i]].z[snap]),fabs(boxsize-fabs(MCMC_GAL[HashTable[i+jj]].z[snap]-MCMC_GAL[HashTable[i]].z[snap])));
-                r=sqrt(relx*relx+rely*rely+relz*relz);
-                if (r/rvir>xmin && r/rvir<=xmax) {
-                  radii[NgalInRange[mbin2]]=r/rvir;
-                  NgalInRange[mbin2]++;
-                } //if
-              } //if
-            } //for
-          } //if
+    NValid=0;
+    for (rbin=0; rbin<NRadiusTable; ++rbin) if (NProfileTable[mbin2][rbin]>0) NValid++;
+    if (NValid>2) {
+      x=malloc(NValid*sizeof(double));
+      y=malloc(NValid*sizeof(double));
+      weights=malloc(NValid*sizeof(double));
+      i=0;
+      for (rbin=0; rbin<NRadiusTable; ++rbin) {
+        if (NProfileTable[mbin2][rbin]>0) {
+	  x[i]=pow(10.,RadiusTable[mbin2][rbin]);
+	  y[i]=log10(ProfileTable[mbin2][rbin]);
+	  weights[i]=max(1./sqrt(MassVarTable2[mbin2]+SQR(0.5*(log10(ProfileTable[mbin2][rbin]+ProfileErrTable[mbin2][rbin])-log10(ProfileTable[mbin2][rbin]-ProfileErrTable[mbin2][rbin])))),1./sqrt(MassVarTable2[mbin2]+SQR(3*(log10(ProfileTable[mbin2][rbin]+ProfileErrTable[mbin2][rbin])-log10(ProfileTable[mbin2][rbin])))));
+	  if (isnan(weights[i])) {
+	    printf("WARNING: Task %d found a NaN for mbin2=%d and i=%d, setting weight to 0...\n",ThisTask,mbin2,i);
+	    weights[i]=0.;
+	  } //if
+	  i++;
         } //if
       } //for
-      p[0]=0.0;
-      p[1]=-0.4+0.12*(ThisTask%6);
-      p[2]=0.1*(ThisTask%6);
-      gsl_vector_set(abc,0,p[0]);
-      gsl_vector_set(abc,1,p[1]);
-      gsl_vector_set(abc,2,p[2]);
-      my_func.params=(void *)radii;
-      gsl_multimin_fdfminimizer_set(s,&my_func,abc,1e-4,1e-2); //stepsize, gradient tolerance
-      iter=0;
-      do {
-        iter++;
-        status=gsl_multimin_fdfminimizer_iterate(s);
-        if (status) break;
-        status=gsl_multimin_test_gradient(s->gradient,1e-2);
-        gsl_vector_set(s->x,0,max(min(gsl_vector_get(s->x,0),pa_high),pa_low));
-        gsl_vector_set(s->x,1,max(min(gsl_vector_get(s->x,1),pb_high),pb_low));
-        gsl_vector_set(s->x,2,max(min(gsl_vector_get(s->x,2),pc_high),pc_low));
-      } //do
-      while (status==GSL_CONTINUE && iter<500);
-      p[0]=max(min(gsl_vector_get(s->x,0),pa_high),pa_low);
-      p[1]=max(min(gsl_vector_get(s->x,1),pb_high),pb_low);
-      p[2]=max(min(gsl_vector_get(s->x,2),pc_high),pc_low);
-      perror[0]=0.1;
-      perror[1]=0.1;
-      perror[2]=0.1;
-      paramerror(radii,p,perror);
+      result.xerror=perror;
+      v.x=x;
+      v.y=y;
+      v.w=weights;
+      fitconst=MassTable2[mbin2]+massoffset;
+      p[0]=0.25;
+      p[1]=-0.64;
+      p[2]=-0.05;
+      config.ftol=1e-12;
+      config.xtol=1e-12;
+      config.maxiter=2000;
+      status=mpfit(gammafit,NValid,3,p,pars,&config,(void *) &v,&result);
       pa_m[mbin2]=p[0];
       pb_m[mbin2]=p[1];
       pc_m[mbin2]=p[2];
       paerr[mbin2]=perror[0];
       pberr[mbin2]=perror[1];
       pcerr[mbin2]=perror[2];
-      if (paerr[mbin2]<0) paerr[mbin2]=0.1;
-      if (pberr[mbin2]<0) pberr[mbin2]=0.1;
-      if (pcerr[mbin2]<0) pcerr[mbin2]=0.1;
-      free(radii);
+      if (paerr[mbin2]==0) paerr[mbin2]=0.5;
+      if (pberr[mbin2]==0) pberr[mbin2]=0.5;
+      if (pcerr[mbin2]==0) pcerr[mbin2]=0.5;
+      if (paerr[mbin2]<0.1) paerr[mbin2]=0.1;
+      if (pberr[mbin2]<0.1) pberr[mbin2]=0.1;
+      if (pcerr[mbin2]<0.1) pcerr[mbin2]=0.1;
+      free(weights);
+      free(y);
+      free(x);
     } //if
   } //for
-  gsl_multimin_fdfminimizer_free(s);
-  gsl_vector_free(abc);
-  free(perror);
-  free(p);
+  mstart=0;
+  mend=NMassTable2;
+  NValid=0;
+  for (mbin2=0; NValid<3 && mbin2<NMassTable2; ++mbin2) {
+    NValid=0;
+    for (rbin=0; rbin<NRadiusTable; ++rbin) if (NProfileTable[mbin2][rbin]>0) NValid++;
+    if (NValid<3) mstart++;
+  } //for
+  NValid=0;
+  for (mbin2=NMassTable2-1; NValid<3 && mbin2>=0; --mbin2) {
+    NValid=0;
+    for (rbin=0; rbin<NRadiusTable; ++rbin) if (NProfileTable[mbin2][rbin]>0) NValid++;
+    if (NValid<3) mend--;
+  } //for
   masstmp=malloc((NMassTable2+2)*sizeof(double));
   patmp=malloc((NMassTable2+2)*sizeof(double));
   pbtmp=malloc((NMassTable2+2)*sizeof(double));
@@ -938,19 +775,16 @@ MCMC_FOF2[j].M_Mean200[snap]<minfofmass+(mbin+1)*(maxfofmass-minfofmass)/(double
     pctmp[i]=pc_m[i-1];
   } //for
   paAcc=gsl_interp_accel_alloc();
-  if (NMassTable2>2) paSpline=gsl_spline_alloc(gsl_interp_akima,NMassTable2+2);
-  else paSpline=gsl_spline_alloc(gsl_interp_cspline,NMassTable2+2);
+  paSpline=gsl_spline_alloc(gsl_interp_akima,NMassTable2+2);
   pbAcc=gsl_interp_accel_alloc();
-  if (NMassTable2>2) pbSpline=gsl_spline_alloc(gsl_interp_akima,NMassTable2+2);
-  else pbSpline=gsl_spline_alloc(gsl_interp_cspline,NMassTable2+2);
+  pbSpline=gsl_spline_alloc(gsl_interp_akima,NMassTable2+2);
   pcAcc=gsl_interp_accel_alloc();
-  if (NMassTable2>2) pcSpline=gsl_spline_alloc(gsl_interp_akima,NMassTable2+2);
-  else pcSpline=gsl_spline_alloc(gsl_interp_cspline,NMassTable2+2);
+  pcSpline=gsl_spline_alloc(gsl_interp_akima,NMassTable2+2);
   gsl_spline_init(paSpline,masstmp,patmp,NMassTable2+2);
   gsl_spline_init(pbSpline,masstmp,pbtmp,NMassTable2+2);
   gsl_spline_init(pcSpline,masstmp,pctmp,NMassTable2+2);
-  parscutoff_low=minfofmass;
-  parscutoff_high=maxfofmass;
+  parscutoff_low=10.;
+  parscutoff_high=16.;
   free(pctmp);
   free(pbtmp);
   free(patmp);
@@ -961,11 +795,19 @@ MCMC_FOF2[j].M_Mean200[snap]<minfofmass+(mbin+1)*(maxfofmass-minfofmass)/(double
   free(pc_m);
   free(pb_m);
   free(pa_m);
-  free(NgalInRange);
   free(NfofTotal);
   free(NgalTotal);
+  for (i=NMassTable2-1; i>=0; --i) {
+    free(ProfileErrTable[i]);
+    free(ProfileTable[i]);
+    free(NProfileTable[i]);
+    free(RadiusTable[i]);
+  } //for
+  free(ProfileErrTable);
+  free(ProfileTable);
+  free(NProfileTable);
+  free(RadiusTable);
   free(MassTable2);
-  free(borders);
 } //init_numgal
 
 void initialize_halomodel() {
@@ -1013,7 +855,7 @@ void initialize_halomodel() {
     if (fscanf(fd," %lg %lg ",&m,&h)==2) i++;
     else break;
     FofmassTable[i-1]=m+log10(ScaleMass);
-    FofnumTable[i-1]=h/pow(ScalePos,3);
+    FofnumTable[i-1]=h-3*log10(ScalePos);
   } //do
   while(1);
   fclose(fd);
@@ -1040,85 +882,17 @@ void initialize_halomodel() {
   gsl_spline_init(FofSpline,FofmassTable,FofnumTable,massbins);
 } //initialize_halomodel
 
-double my_f(const gsl_vector *v,void *params) {
+int gammafit(int m,int n,double *p,double *dy,double **dvec,void *vars) {
   int i;
-  double a,b,c,tot;
-  double *p=(double *)params;
-  if (gsl_vector_get(v,0)<pa_low) a=pow(10.,pa_low);
-  else if (gsl_vector_get(v,0)>pa_high) a=pow(10.,pa_high);
-  else a=pow(10.,gsl_vector_get(v,0));
-  if (gsl_vector_get(v,1)<pb_low) b=pow(10.,pb_low);
-  else if (gsl_vector_get(v,1)>pb_high) b=pow(10.,pb_high);
-  else b=pow(10.,gsl_vector_get(v,1));
-  if (gsl_vector_get(v,2)<pc_low) c=pow(10.,pc_low);
-  else if (gsl_vector_get(v,2)>pc_high) c=pow(10.,pc_high);
-  else c=pow(10.,gsl_vector_get(v,2));
-  tot=numrad*(log(c)-a*log(b)-gsl_sf_lngamma(a/c));
-  for (i=0; i<numrad; ++i) tot+=(a-3)*log(p[i])-pow(p[i]/b,c);
-  return -tot;
-} //my_f
-
-/* The gradient of f, df = (df/dx, df/dy). */
-void my_df(const gsl_vector *v,void *params,gsl_vector *df) {
-  int i;
-  double a,b,c,tot;
-  double *p=(double *)params;
-  if (gsl_vector_get(v,0)<pa_low) a=pow(10.,pa_low);
-  else if (gsl_vector_get(v,0)>pa_high) a=pow(10.,pa_high);
-  else a=pow(10.,gsl_vector_get(v,0));
-  if (gsl_vector_get(v,1)<pb_low) b=pow(10.,pb_low);
-  else if (gsl_vector_get(v,1)>pb_high) b=pow(10.,pb_high);
-  else b=pow(10.,gsl_vector_get(v,1));
-  if (gsl_vector_get(v,2)<pc_low) c=pow(10.,pc_low);
-  else if (gsl_vector_get(v,2)>pc_high) c=pow(10.,pc_high);
-  else c=pow(10.,gsl_vector_get(v,2));
-  tot=-numrad*(a/c*gsl_sf_psi(a/c));
-  for (i=0; i<numrad; ++i) tot+=a*log(p[i]/b);
-  gsl_vector_set(df,0,-tot);
-  tot=-numrad*a;
-  for (i=0; i<numrad; ++i) tot+=c*pow(p[i]/b,c);
-  gsl_vector_set(df,1,-tot);
-  tot=numrad*(1+a/c*gsl_sf_psi(a/c));
-  for (i=0; i<numrad; ++i) tot-=c*log(p[i]/b)*pow(p[i]/b,c);
-  gsl_vector_set(df,2,-tot);
-} //my_df
-
-/* Compute both f and df together. */
-void my_fdf(const gsl_vector *x,void *params,double *f,gsl_vector *df) {
-  *f=my_f(x,params); 
-  my_df(x,params,df);
-} //my_fdf
-
-void paramerror(double *x,double *p,double *perror) {
-  int i;
-  double a=pow(10.,p[0]);
-  double b=pow(10.,p[1]);
-  double c=pow(10.,p[2]);
-  double polygamma0=gsl_sf_psi(a/c);
-  double dblderiv=0;
-  for (i=0; i<numrad; ++i) dblderiv+=pow(a/c*polygamma0-a*log(x[i]/b),2);
-  perror[0]=pow(1./(sqrt(2*PI)*dblderiv),1./3.);
-  dblderiv=0;
-  for (i=0; i<numrad; ++i) dblderiv+=pow(a-c*pow(x[i]/b,c),2);
-  perror[1]=pow(1./(sqrt(2*PI)*dblderiv),1./3.);
-  dblderiv=0;
-  for (i=0; i<numrad; ++i)
-dblderiv+=pow(1-c*log(x[i]/b)*pow(x[i]/b,c)+a/c*polygamma0,2);
-  perror[2]=pow(1./(sqrt(2*PI)*dblderiv),1./3.);
-} //paramerror
-
-int poissonfit(int m,int n,double *p,double *dy,double **dvec,void *vars) {
-  int i;
-  double a=pow(10.,p[0]);
-  double b=pow(10.,p[1]);
-  double c=pow(10.,p[2]);
-  double *x=(double *) vars; //should be r/rvir for every satellite with xmin<r/rvir<xmax
-  double digam=gsl_sf_psi(a/c)/c;
-  for (i=0; i<n; ++i) dy[i]=0;
-  for (i=0; i<numrad; ++i) {
-    dy[0]+=log(x[i]/b)-digam;
-    dy[1]+=c/b*pow(x[i]/b,c)-a/b;
-    dy[2]+=1./c+a/c*digam-log(x[i]/b)*pow(x[i]/b,c);
+  double lognorm=p[2]-log10(4*PI)-gsl_sf_lngamma(pow(10.,p[0]))/log(10.)-log10(gsl_sf_gamma_inc_P(pow(10.,p[0]),pow(xrvir/pow(10.,p[1]),pow(10.,p[2]))))-fitconst;
+  struct fitvars *v=(struct fitvars *) vars;
+  double *x,*y,*w,f;
+  x=v->x; //should be r/rvir (NOT log)
+  y=v->y; //should be log10(profile)
+  w=v->w; //should be a standard deviation in log space
+  for (i=0; i<m; i++) {
+    f=lognorm+pow(10.,p[0]+p[2])*(log10(x[i])-p[1])-3*log10(x[i])-pow(x[i]/pow(10.,p[1]),pow(10.,p[2]))/log(10.);
+    dy[i]=(y[i]-f)*w[i];
   } //for
   return 0;
-} //poissonfit
+} //gammafit

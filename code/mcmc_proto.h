@@ -11,6 +11,7 @@ void open_files_with_comparison_to_observations(void);
 void close_files_with_comparison_to_observations(void);
 double propose_new_parameters(void);
 void save_galaxy_for_mcmc(int gal_index);
+void reset_cosmology(void);
 #ifdef MR_PLUS_MRII
 void change_dark_matter_sim(char SimName[]);
 #endif
@@ -20,7 +21,6 @@ void bin_function(int ObsNr, double *binsamdata, double *samdata, int snap);
 void bin_red_fraction(int ObsNr, double *binredfraction, int snap);
 void bin_passive_fraction(int ObsNr, double *binpassivefraction, int snap);
 void bin_bulge_fraction(int ObsNr, double *binbulgefraction, int snap);
-void bin_ColdGasFractionvsStellarMass(int ObsNr, double *bingasfraction, int snap);
 void bin_color_hist(int ObsNr, double *bincolorhist, int snap);
 void bin_bhbm(double *binblackholeup, double *binblackholedown, int snap);
 void correct_for_correlation(int snap);

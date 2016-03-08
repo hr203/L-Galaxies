@@ -149,6 +149,8 @@ void load_tree_table(int filenr)
   HaloIDs_Data = mymalloc("HaloIDs_Data", sizeof(struct halo_ids_data) * totNHalos);
   myfseek(treedbids_file, 0, SEEK_SET);
   myfread(HaloIDs_Data, totNHalos, sizeof(struct halo_ids_data), treedbids_file);
+  //for(i=0;i<totNHalos;i++)
+  //	printf("id=%lld\n",HaloIDs_Data[i].FirstHaloInFOFgroup);
 #ifdef PARALLEL
   printf("\nTask %d done loading tree_dbids_%d\n", ThisTask, filenr);
 #endif
@@ -239,6 +241,10 @@ void free_tree_table(void)
 
 #ifdef UPDATETYPETWO
   myfree(TreeAuxData);
+  /*myfree(TreeAuxVel);
+  myfree(TreeAuxPos);
+  myfree(TreeAuxIds);
+  myfree(TreeAuxHeader);*/
 #endif
 
 #ifdef LOADIDS

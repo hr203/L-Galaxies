@@ -93,22 +93,25 @@ void read_parameter_file(char *fname)
   addr[nt] = &Hashbits;
   id[nt++] = INT;
 
+  /*strcpy(tag[nt], "NumWrittenInParallel");
+  addr[nt] = &NumWrittenInParallel;
+  id[nt++] = INT;*/
+
+
+
+
 //Variables used in the MCMC
 #ifdef MCMC
-  strcpy(tag[nt], "MCMCStartingParFile");
-  addr[nt] = MCMCStartingParFile;
-  id[nt++] = STRING;
-
-  strcpy(tag[nt], "MCMCParPriorsAndSwitchesFile");
-  addr[nt] = MCMCParPriorsAndSwitchesFile;
+  strcpy(tag[nt], "MCMCParameterPriorsAndSwitches");
+  addr[nt] = MCMCParameterPriorsAndSwitches;
   id[nt++] = STRING;
 
   strcpy(tag[nt], "MCMCObsConstraints");
   addr[nt] = MCMCObsConstraints;
   id[nt++] = STRING;
 
-  strcpy(tag[nt], "MCMCWeightsObsConstraints");
-  addr[nt] = MCMCWeightsObsConstraints;
+  strcpy(tag[nt], "CosmologyTablesDir");
+  addr[nt] = CosmologyTablesDir;
   id[nt++] = STRING;
 
   strcpy(tag[nt], "ObsConstraintsDir");
@@ -145,22 +148,32 @@ void read_parameter_file(char *fname)
   id[nt++] = INT;
 #endif
 
-#ifdef HALOMODEL
-  strcpy(tag[nt], "MCMCHaloModelDir");
-  addr[nt] = MCMCHaloModelDir;
-  id[nt++] = STRING;
-#endif
+  strcpy(tag[nt], "MCMCSampleFileType");
+  addr[nt] = &MCMCSampleFileType;
+  id[nt++] = INT;
 
   strcpy(tag[nt], "MCMCTreeSampleFile");
   addr[nt] = &MCMCTreeSampleFile;
   id[nt++] = INT;
 
+  strcpy(tag[nt], "MCMCHaloModelDir");
+  addr[nt] = MCMCHaloModelDir;
+  id[nt++] = STRING;
+
   strcpy(tag[nt], "ChainLength");
   addr[nt] = &ChainLength;
   id[nt++] = INT;
 
-  strcpy(tag[nt], "Time_Dependent_PhysPar");
-  addr[nt] = &Time_Dependent_PhysPar;
+  strcpy(tag[nt], "Sample_Physical_Parameters");
+  addr[nt] = &Sample_Physical_Parameters;
+  id[nt++] = INT;
+
+  strcpy(tag[nt], "Time_Dependant_PhysPar");
+  addr[nt] = &Time_Dependant_PhysPar;
+  id[nt++] = INT;
+
+  strcpy(tag[nt], "Sample_Cosmological_Parameters");
+  addr[nt] = &Sample_Cosmological_Parameters;
   id[nt++] = INT;
 
   strcpy(tag[nt], "MCMCMode");
@@ -177,10 +190,6 @@ void read_parameter_file(char *fname)
 
   strcpy(tag[nt], "MCMC_Minimum_Obs_Error");
   addr[nt] = &MCMC_Minimum_Obs_Error;
-  id[nt++] = DOUBLE;
-
-  strcpy(tag[nt], "AddedErrOnMass");
-  addr[nt] = &AddedErrOnMass;
   id[nt++] = DOUBLE;
 
   strcpy(tag[nt], "MachineTimeOut");
@@ -348,56 +357,57 @@ void read_parameter_file(char *fname)
 
 
   //Physical Recipes
-  strcpy(tag[nt], "ReionizationModel");
-  addr[nt] = &ReionizationModel;
+
+  strcpy(tag[nt], "StarFormationRecipe");
+  addr[nt] = &StarFormationRecipe;
   id[nt++] = INT;
 
-  strcpy(tag[nt], "DiskRadiusModel");
-  addr[nt] = &DiskRadiusModel;
+  strcpy(tag[nt], "FeedbackRecipe");
+  addr[nt] = &FeedbackRecipe;
   id[nt++] = INT;
 
-  strcpy(tag[nt], "StarFormationModel");
-  addr[nt] = &StarFormationModel;
+  strcpy(tag[nt], "EjectionRecipe");
+  addr[nt] = &EjectionRecipe;
   id[nt++] = INT;
 
-  strcpy(tag[nt], "FeedbackReheatingModel");
-  addr[nt] = &FeedbackReheatingModel;
+  strcpy(tag[nt], "ReIncorporationRecipe");
+  addr[nt] = &ReIncorporationRecipe;
   id[nt++] = INT;
 
-  strcpy(tag[nt], "FeedbackEjectionModel");
-  addr[nt] = &FeedbackEjectionModel;
+  strcpy(tag[nt], "ReionizationOn");
+  addr[nt] = &ReionizationOn;
   id[nt++] = INT;
 
-  strcpy(tag[nt], "FateOfSatellitesGas");
-  addr[nt] = &FateOfSatellitesGas;
-  id[nt++] = INT;
-
-  strcpy(tag[nt], "ReIncorporationModel");
-  addr[nt] = &ReIncorporationModel;
+  strcpy(tag[nt], "BlackHoleGrowth");
+  addr[nt] = &BlackHoleGrowth;
   id[nt++] = INT;
 
   strcpy(tag[nt], "AGNRadioModeModel");
   addr[nt] = &AGNRadioModeModel;
   id[nt++] = INT;
 
-  strcpy(tag[nt], "DiskInstabilityModel");
-  addr[nt] = &DiskInstabilityModel;
+  strcpy(tag[nt], "DiskRadiusMethod");
+  addr[nt] = &DiskRadiusMethod;
   id[nt++] = INT;
 
-  strcpy(tag[nt], "BHGrowthInDiskInstabilityModel");
-  addr[nt] = &BHGrowthInDiskInstabilityModel;
+  strcpy(tag[nt], "TrackDiskInstability");
+  addr[nt] = &TrackDiskInstability;
+  id[nt++] = INT;
+
+  strcpy(tag[nt], "BlackHoleGrowthInDiskInstability");
+  addr[nt] = &BlackHoleGrowthInDiskInstability;
   id[nt++] = INT;
 
   strcpy(tag[nt], "HotGasStripingModel");
   addr[nt] = &HotGasStripingModel;
   id[nt++] = INT;
 
-  strcpy(tag[nt], "DisruptionModel");
-  addr[nt] = &DisruptionModel;
+  strcpy(tag[nt], "HotGasOnType2Galaxies");
+  addr[nt] = &HotGasOnType2Galaxies;
   id[nt++] = INT;
 
-  strcpy(tag[nt], "StarBurstModel");
-  addr[nt] = &StarBurstModel;
+  strcpy(tag[nt], "StarBurstRecipe");
+  addr[nt] = &StarBurstRecipe;
   id[nt++] = INT;
 
   strcpy(tag[nt], "BulgeFormationInMinorMergersOn");
@@ -440,8 +450,20 @@ void read_parameter_file(char *fname)
   addr[nt] = &RamPressureStrip_CutOffMass;
   id[nt++] = DOUBLE;
 
+  strcpy(tag[nt], "RamPressureRadiusThreshold");
+  addr[nt] = &RamPressureRadiusThreshold;
+  id[nt++] = DOUBLE;
+
   strcpy(tag[nt], "SfrEfficiency");
   addr[nt] = &SfrEfficiency;
+  id[nt++] = DOUBLE;
+
+  strcpy(tag[nt], "SfrLawPivotVelocity");
+  addr[nt] = &SfrLawPivotVelocity;
+  id[nt++] = DOUBLE;
+
+  strcpy(tag[nt], "SfrLawSlope");
+  addr[nt] = &SfrLawSlope;
   id[nt++] = DOUBLE;
 
   strcpy(tag[nt], "SfrColdCrit");
@@ -464,8 +486,16 @@ void read_parameter_file(char *fname)
   addr[nt] = &BlackHoleGrowthRate;
   id[nt++] = DOUBLE;
 
+  strcpy(tag[nt], "BlackHoleDisruptGrowthRate");
+  addr[nt] = &BlackHoleDisruptGrowthRate;
+  id[nt++] = DOUBLE;
+
   strcpy(tag[nt], "BlackHoleSeedMass");
   addr[nt] = &BlackHoleSeedMass;
+  id[nt++] = DOUBLE;
+
+  strcpy(tag[nt], "BlackHoleAccretionRate");
+  addr[nt] = &BlackHoleAccretionRate;
   id[nt++] = DOUBLE;
 
   strcpy(tag[nt], "BlackHoleCutoffVelocity");
@@ -500,13 +530,46 @@ void read_parameter_file(char *fname)
   addr[nt] = &ReIncorporationFactor;
   id[nt++] = DOUBLE;
 
+  strcpy(tag[nt], "ReincZpower");
+  addr[nt] = &ReincZpower;
+  id[nt++] = DOUBLE;
+
+  strcpy(tag[nt], "ReincVelocitypower");
+  addr[nt] = &ReincVelocitypower;
+  id[nt++] = DOUBLE;
+
+  strcpy(tag[nt], "FracZtoHot");
+  addr[nt] = &FracZtoHot;
+  id[nt++] = DOUBLE;
+
+//in the future ready in different energies for each type of SN
+//#ifdef FEEDBACK_COUPLED_WITH_MASS_RETURN
+//#else
   strcpy(tag[nt], "EnergySN");
   addr[nt] = &EnergySN;
   id[nt++] = DOUBLE;
+//#endif
 
   strcpy(tag[nt], "EtaSN");
   addr[nt] = &EtaSN;
   id[nt++] = DOUBLE;
+
+
+
+  //UNITS
+
+  strcpy(tag[nt], "UnitVelocity_in_cm_per_s");
+  addr[nt] = &UnitVelocity_in_cm_per_s;
+  id[nt++] = DOUBLE;
+
+  strcpy(tag[nt], "UnitLength_in_cm");
+  addr[nt] = &UnitLength_in_cm;
+  id[nt++] = DOUBLE;
+
+  strcpy(tag[nt], "UnitMass_in_g");
+  addr[nt] = &UnitMass_in_g;
+  id[nt++] = DOUBLE;
+
 
   if((fd = fopen(fname, "r")))
     {
