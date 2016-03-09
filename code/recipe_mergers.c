@@ -667,7 +667,6 @@ double collisional_starburst_recipe(double mass_ratio, int merger_centralgal, in
   mstars = eburst * Gal[merger_centralgal].ColdGas;
   if(mstars < 0.0)
     mstars = 0.0;
-
 #ifdef FEEDBACK_COUPLED_WITH_MASS_RETURN
   if(mstars > Gal[merger_centralgal].ColdGas)
         mstars = Gal[merger_centralgal].ColdGas;

@@ -545,7 +545,15 @@ void SN_feedback(int p, int centralgal, double stars, char feedback_location[])
 	  	update_from_feedback(p, centralgal, reheated_mass, ejected_mass);
 }
 
-
+#ifdef AGNFB 
+void AGN_feedback(int p, int centralgal, double accretionrate,char feedback_location[])
+{
+  double reheated_mass=0., ejected_mass=0.,mass_ejected=0.01,mass_reheated=0.00;
+  ejected_mass = mass_ejected*accretionrate;
+  if (reheated_mass + ejected_mass > 0.)
+        update_from_feedback(p, centralgal, reheated_mass, ejected_mass);
+}
+#endif
 /** @brief Updates cold, hot and external gas components due to SN
  *         reheating and ejection. */
 void update_from_feedback(int p, int centralgal, double reheated_mass, double ejected_mass)
