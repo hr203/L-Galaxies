@@ -152,6 +152,10 @@ void starformation(int p, int centralgal, double time, double dt, int nstep)
     		SN_feedback(p, centralgal, stars, "ColdGas");
   #endif
 
+//#ifdef AGNFB
+//                AGN_feedback(p, Gal[p].CentralGal, Gal[p].QuasarAccretionRate, "ColdGas");
+//#endif
+
 
 #ifdef COMPUTE_SPECPHOT_PROPERTIES
 #ifndef POST_PROCESS_MAGS
@@ -542,28 +546,63 @@ void SN_feedback(int p, int centralgal, double stars, char feedback_location[])
 
 	  //ejected_mass = 0.01*Gal[centralgal].HotGas;
 	  if (reheated_mass + ejected_mass > 0.)
-	  	update_from_feedback(p, centralgal, reheated_mass, ejected_mass);
+	  	update_from_feedback(p, centralgal, reheated_mass, ejected_mass,"stellar");
 }
 
 #ifdef AGNFB 
 void AGN_feedback(int p, int centralgal, double accretionrate,char feedback_location[])
 {
-  double reheated_mass=0., ejected_mass=0.,mass_ejected=0.01,mass_reheated=0.00;
+  double reheated_mass=0., ejected_mass=0.,mass_ejected=0.1,mass_reheated=0.00;
   ejected_mass = mass_ejected*accretionrate;
   if (reheated_mass + ejected_mass > 0.)
-        update_from_feedback(p, centralgal, reheated_mass, ejected_mass);
+        update_from_feedback(p, centralgal, reheated_mass, ejected_mass, "quasar");
 }
 #endif
 /** @brief Updates cold, hot and external gas components due to SN
  *         reheating and ejection. */
-void update_from_feedback(int p, int centralgal, double reheated_mass, double ejected_mass)
+void update_from_feedback(int p, int centralgal, double reheated_mass, double ejected_mass, char feedback_type[])
 {
   double dis=0.;
   double massremain;
   double fraction;
   int merger_centre;
 
-  //mass_checks("update_from_feedback #1",p);
+  if (strcmp(feedback_type,"quasar")==0) 
+  {
+    double ref_hot, final_hot;
+      //printf("quasar feedback");
+      fraction = ejected_mass/Gal[centralgal].HotGas;
+      printf("\n%lf \n",ejected_mass);
+
+      ref_hot = Gal[p].HotGas;
+      if (Gal[p].HotGas!=0)
+	{
+	  printf("hot gas present\n");
+	  if (fraction <= 1.0)
+	    { 
+	      transfer_gas(Gal[p].CentralGal,"Ejected",Gal[p].CentralGal,"Hot",fraction,"update_from_feedback", __LINE__);
+	      //Gal[p].HotGas=0;//1e30;
+	      //printf("SET0");
+	      //printf("%f",Gal[p].HotGas);
+	    }
+	  else
+	    {
+	      transfer_gas(Gal[p].CentralGal,"Ejected",Gal[p].CentralGal,"Hot",1.0,"update_from_feedback", __LINE__);
+	      //Gal[p].HotGas=0;//1e30;
+	      //printf("%f",Gal[p].HotGas);
+	    }
+	}
+
+      final_hot = Gal[p].HotGas;
+
+      printf("\n %lf        %lf \n", ref_hot, final_hot);
+  }
+  else
+  {
+
+
+  //mass_checks("update_from_feedback #1",p)
+
 
   if(FeedbackRecipe == 0 || FeedbackRecipe == 1)
   {
@@ -696,7 +735,7 @@ void update_from_feedback(int p, int centralgal, double reheated_mass, double ej
     }//(Gal[Gal[p].CentralGal].HotGas > 0.)
 
   } //if(FeedbackRecipe == 0 || FeedbackRecipe == 1)
-
+  } // if (feedback_type != quasar)
 }
 
 //Age in Mpc/Km/s/h - code units
