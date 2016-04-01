@@ -37,6 +37,8 @@ ifeq (STAR_FORMATION_HISTORY,$(findstring STAR_FORMATION_HISTORY,$(OPT)))
 OBJS  += ./code/star_formation_history.o
 endif
 
+#AGN feeback switch - for testing
+OPT += -DAGNFB
 
 ###########################
 ### SPECPHOT_PROPERTIES ###

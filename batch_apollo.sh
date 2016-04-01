@@ -9,7 +9,7 @@ ulimit -s unlimited
 # Do not limit the number of open files a job can have
 #ulimit -n unlimited
 # Run the job from the following directory
-cd /mnt/lustre/scratch/petert/L-Galaxies/L-Galaxies
+cd /lustre/scratch/astro/hr203/SAM/agn/L-Galaxies
 # Created files will have the fs-virgo group
 # This feature seems to be disabled on Apollo, so this does not work
 newgrp fs-virgo
@@ -21,7 +21,7 @@ umask 002
 # Say which queue you want to submit to
 #$ -q mps.q
 # Define a task farm of jobs
-#$ -t 1-512
+#$ -t 1-50#512
 ##$ -t 449-449
 # Limit to 50 concurrent jobs
 #$ -tc 50 
@@ -43,7 +43,7 @@ lf=$(($i))
 echo FirstFile $ff | cat >  input_batch/input.500_$i
 echo LastFile $lf | cat >>  input_batch/input.500_$i
 echo MaxMemSize 2000 >> input_batch/input.500_$i
-cat input/input.500 >> input_batch/input.500_$i
+cat input/input_Henriques2014_MR_W1_PLANCK.par >> input_batch/input.500_$i
 
 # Run jobs
 ./L-Galaxies input_batch/input.500_$i

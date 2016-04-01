@@ -5,16 +5,16 @@
 FileNameGalaxies      SA
 FileWithOutputRedshifts   ./input/desired_output_redshifts.txt
 
-SpecPhotDir           ../../SAM/SpecPhotTables/
+SpecPhotDir           /lustre/scratch/astro/virgo/L-Galaxies/SpecPhotTables/
 PhotPrefix            BC03   % WMAP7_M05
 SpecPhotIMF           Chabrier
 FileWithFilterNames   ./input/Filter_Sloan.txt
 McFile		      ./input/Mc.txt
-CoolFunctionsDir      /mnt/lustre/scratch/virgo/L-Galaxies/CoolFunctions/
+CoolFunctionsDir      /lustre/scratch/astro/hr203/SAM/agn//L-Galaxies/CoolFunctions/
 
 % Note: full path is needed or Apollo gets confused by the symbolic links
-OutputDir           /mnt/lustre/scratch/petert/L-Galaxies/output/
-SimulationDir       /mnt/lustre/scratch/virgo/Trees/MR/
+OutputDir           /lustre/scratch/astro/hr203/SAM/agn//L-Galaxies/output/
+SimulationDir       /lustre/scratch/astro/virgo/Trees/MR/
 
 LastDarkMatterSnapShot  63
 Hashbits                8
