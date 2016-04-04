@@ -98,7 +98,7 @@ ReionizationOn          	    2	;
                                       % 1 -- Gnedin reionization (Delucia2007), 
 				                      %*2 -- Okamoto 2008 (Guo2010)
 
-BlackHoleGrowth                 0   ;How black hole growth from quasar mode is handled
+BlackHoleGrowth                 1   ;How black hole growth from quasar mode is handled
                                        %*0 -- instantaneous; accretion rate reported averaged over step
                                       % 1 -- via accretion disk at some fraction of Eddington rate
 
