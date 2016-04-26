@@ -246,7 +246,7 @@ void init_galaxy(int p, int halonr)
   Gal[p].MetalsBulgeMass = metals_init();
   Gal[p].MetalsHotGas = metals_init();
   Gal[p].MetalsEjectedMass = metals_init();
-#ifdef AGNFB
+#ifdef AGNFB && FARRES
   Gal[p].MetalsFarEjectedMass=metals_init();
 #endif
   Gal[p].MetalsICM = metals_init();
@@ -259,7 +259,7 @@ void init_galaxy(int p, int halonr)
   Gal[p].MetalsBulgeMass = 0.0;
   Gal[p].MetalsHotGas = 0.0;
   Gal[p].MetalsEjectedMass = 0.0;
-#ifdef AGNFB
+#ifdef AGNFB && FARRES
   Gal[p].MetalsFarEjectedMass = 0.0;
 #endif
   Gal[p].MetalsICM = 0.0;
@@ -361,7 +361,7 @@ void init_galaxy(int p, int halonr)
   Gal[p].BulgeMass_elements = elements_init();
   Gal[p].HotGas_elements = elements_init();
   Gal[p].EjectedMass_elements = elements_init();
-#ifdef AGNFB
+#ifdef AGNFB && FARRES
   Gal[p].FarEjectedMass_elements = elements_init();
 #endif
   Gal[p].ICM_elements = elements_init();
@@ -1171,7 +1171,7 @@ void transfer_gas(int p, char cp[], int q, char cq[], double fraction, char call
     Yield = elements_add(elements_init(),Gal[q].EjectedMass_elements,fraction);
 #endif
   } 
-#ifdef AGNFB
+#ifdef AGNFB && FARRES
 else if (strcmp(cq,"FarEjected")==0) {
     Mass=fraction*Gal[q].FarEjectedMass;
     Metals = metals_add(metals_init(),Gal[q].MetalsFarEjectedMass,fraction);
@@ -1208,7 +1208,7 @@ else {
     Gal[p].EjectedMass_elements = elements_add(Gal[p].EjectedMass_elements,Yield,1.);
 #endif
   } 
-#ifdef AGNFB
+#ifdef AGNFB && FARRES
 else if (strcmp(cp,"FarEjected")==0) {
     Gal[p].FarEjectedMass += Mass;
     Gal[p].MetalsFarEjectedMass = metals_add(Gal[p].MetalsFarEjectedMass,Metals,1.);
@@ -1245,7 +1245,7 @@ else {
     Gal[q].EjectedMass_elements = elements_add(Gal[q].EjectedMass_elements,Yield,-1.);
 #endif
   } 
-#ifdef AGNFB
+#ifdef AGNFB && FARRES
 else if (strcmp(cq,"FarEjected")==0) {
     Gal[q].FarEjectedMass -= Mass;
     Gal[q].MetalsFarEjectedMass = metals_add(Gal[q].MetalsFarEjectedMass,Metals,-1.);
@@ -1490,7 +1490,7 @@ void mass_checks(char string[], int igal) {
       printf("                HotGas[%d] = %.11f\n",igal,Gal[igal].HotGas);
       printf("             BulgeMass[%d] = %g\n",igal,Gal[igal].BulgeMass);
       printf("           EjectedMass[%d] = %g\n",igal,Gal[igal].EjectedMass);
-#ifdef AGNFB
+#ifdef AGNFB && FARRES
       printf("        FarEjectedMass[%d] = %g\n",igal,Gal[igal].FarEjectedMass);
 #endif
       printf("                  Snapnum = %i\n",Gal[igal].SnapNum);
@@ -1530,7 +1530,7 @@ void mass_checks(char string[], int igal) {
     }
   }
 
-#ifdef AGNFB
+#ifdef AGNFB && FARRES
   if(Gal[igal].FarEjectedMass < 0.0) {
     if (Gal[igal].FarEjectedMass > -1e-7)
       Gal[igal].FarEjectedMass = 0.;
@@ -2098,7 +2098,7 @@ void print_galaxy(char string[], int p, int halonr)
         printf(" Hot=%0.3e Cold=%0.3e Eject=%0.3e disk=%0.3e bulge=%0.3e  GasDiskRadius=%0.3e\n",
                         Gal[p].HotGas*1.e10, Gal[p].ColdGas*1.e10, Gal[p].EjectedMass*1.e10,
                         Gal[p].DiskMass*1.e10, Gal[p].BulgeMass*1.e10, Gal[p].GasDiskRadius);
-#ifdef AGNFB
+#ifdef AGNFB && FARES
 	printf(" Hot=%0.3e Cold=%0.3e Eject=%0.3e FarEject=%0.3e disk=%0.3e bulge=%0.3e  GasDiskRadius=%0.3e\n",
 			Gal[p].HotGas*1.e10, Gal[p].ColdGas*1.e10, Gal[p].EjectedMass*1.e10,Gal[p].FarEjectedMass*1.e10,
 			Gal[p].DiskMass*1.e10, Gal[p].BulgeMass*1.e10, Gal[p].GasDiskRadius);

@@ -152,9 +152,6 @@ void starformation(int p, int centralgal, double time, double dt, int nstep)
     		SN_feedback(p, centralgal, stars, "ColdGas");
   #endif
 
-//#ifdef AGNFB
-//                AGN_feedback(p, Gal[p].CentralGal, Gal[p].QuasarAccretionRate, "ColdGas");
-//#endif
 
 
 #ifdef COMPUTE_SPECPHOT_PROPERTIES
@@ -586,7 +583,11 @@ void update_from_feedback(int p, int centralgal, double reheated_mass, double ej
 		if (fraction >=0.0)
 		{
                       fraction=0.0;
+#ifdef FARRES
 		      transfer_gas(centralgal,"FarEjected",centralgal,"Hot",fraction,"update_from_feedback", __LINE__);
+#else
+		      transfer_gas(centralgal,"Ejected",centralgal,"Hot",fraction,"update_from_feedback", __LINE__);
+#endif
 	    	}
 		else
 		{
@@ -601,7 +602,11 @@ void update_from_feedback(int p, int centralgal, double reheated_mass, double ej
               printf("%s \n", "WARNING: trying to transfer more hot gas than exists in galaxy");
               printf("%lf",fraction);
               printf("%s \n", " too large to be ejected");
+#ifdef FARRES
               transfer_gas(centralgal,"FarEjected",centralgal,"Hot",1.0,"update_from_feedback", __LINE__);
+#else
+              transfer_gas(centralgal,"Ejected",centralgal,"Hot",1.0,"update_from_feedback", __LINE__);
+#endif
 	    }
 	}
 

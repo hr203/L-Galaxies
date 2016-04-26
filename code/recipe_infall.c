@@ -37,7 +37,7 @@ double infall_recipe(int centralgal, int ngal, double Zcurr)
     if ( dis < Gal[centralgal].Rvir ) {
       tot_mass += Gal[i].DiskMass + Gal[i].BulgeMass + Gal[i].ICM + Gal[i].BlackHoleMass;
       tot_mass += Gal[i].ColdGas + Gal[i].HotGas + Gal[i].EjectedMass + Gal[i].BlackHoleGas;
-#ifdef AGNFB
+#ifdef AGNFB && FARRES
       tot_mass += Gal[i].FarEjectedMass;
 #endif
     }

@@ -208,7 +208,7 @@ void prepare_galaxy_for_output(int n, struct GALAXY *g, struct GALAXY_OUTPUT *o)
 
   o->BulgeSize = g->BulgeSize;
   o->EjectedMass = CORRECTDBFLOAT(g->EjectedMass);
-#ifdef AGNFB
+#ifdef AGNFB && FARRES
   o->FarEjectedMass = CORRECTDBFLOAT(g->FarEjectedMass);
 #endif
   //o->BlackHoleGas = g->BlackHoleGas;
@@ -284,7 +284,7 @@ void prepare_galaxy_for_output(int n, struct GALAXY *g, struct GALAXY_OUTPUT *o)
   o->MetalsBulgeMass = CORRECTDBFLOAT(g->MetalsBulgeMass);
   o->MetalsHotGas = CORRECTDBFLOAT(g->MetalsHotGas);
   o->MetalsEjectedMass = CORRECTDBFLOAT(g->MetalsEjectedMass);   
-#ifdef AGNFB
+#ifdef AGNFB && FARRES
   o->MetalsFarEjectedMass = CORRECTDBFLOAT(g->MetalsFarEjectedMass);   
 #endif
 #ifdef METALS_SELF
@@ -399,7 +399,7 @@ void prepare_galaxy_for_output(int n, struct GALAXY *g, struct GALAXY_OUTPUT *o)
   o->ColdGas_elements = g->ColdGas_elements;
   o->HotGas_elements = g->HotGas_elements;
   o->EjectedMass_elements = g->EjectedMass_elements;
-#ifdef AGNFB
+#ifdef AGNFB && FARRES
   o->FarEjectedMass_elements = g->FarEjectedMass_elements;
 #endif
   o->ICM_elements = g->ICM_elements;
@@ -625,7 +625,7 @@ void fix_units_for_ouput(struct GALAXY_OUTPUT *o)
   o->BulgeMass /= Hubble_h;
   o->HotGas /= Hubble_h;
   o->EjectedMass /= Hubble_h;
-#ifdef AGNFB
+#ifdef AGNFB && FARRES
   o->FarEjectedMass /= Hubble_h;
 #endif
   o->BlackHoleMass /= Hubble_h;
@@ -643,7 +643,7 @@ void fix_units_for_ouput(struct GALAXY_OUTPUT *o)
   o->MetalsBulgeMass=metals_add(metals_init(),o->MetalsBulgeMass,1./Hubble_h);
   o->MetalsHotGas=metals_add(metals_init(),o->MetalsHotGas,1./Hubble_h);
   o->MetalsEjectedMass=metals_add(metals_init(),o->MetalsEjectedMass,1./Hubble_h);
-#ifdef AGNFB
+#ifdef AGNFB && FARRES
   o->MetalsFarEjectedMass=metals_add(metals_init(),o->MetalsFarEjectedMass,1./Hubble_h);
 #endif
   o->MetalsICM=metals_add(metals_init(),o->MetalsICM,1./Hubble_h);

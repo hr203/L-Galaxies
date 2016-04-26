@@ -65,7 +65,7 @@ void deal_with_satellites(int centralgal, int ngal)
 			  /* Note: the original code transferrred from ejected to hot here, but had all other
 			   * such transfers between equivalent phases.  I have altered for consistency. */
 			  transfer_gas(centralgal,"Ejected",i,"Ejected",1.,"deal_with_satellites", __LINE__);
-#ifdef AGNFB
+#ifdef AGNFB && FARRES
 			  transfer_gas(centralgal,"FarEjected",i,"FarEjected",1.,"deal_with_satellites", __LINE__);
 #endif
 #ifdef TRACK_BURST
@@ -90,7 +90,7 @@ void deal_with_satellites(int centralgal, int ngal)
 			  {
 				transfer_gas(Gal[i].CentralGal,"Hot",i,"Hot",1.,"deal_with_satellites", __LINE__);
 				transfer_gas(Gal[i].CentralGal,"Ejected",i,"Ejected",1.,"deal_with_satellites", __LINE__);
-#ifdef AGNFB
+#ifdef AGNFB && FARRES
 				transfer_gas(Gal[i].CentralGal,"Ejected",i,"Ejected",1.,"deal_with_satellites", __LINE__);
 #endif
 #ifdef TRACK_BURST
@@ -138,7 +138,7 @@ void deal_with_satellites(int centralgal, int ngal)
 			  	transfer_gas(Gal[i].CentralGal,"Hot",i,"Hot",gasfraction_intotype1,"deal_with_satellites", __LINE__);
 			  if(Gal[i].EjectedMass > 0.0)
 			  	transfer_gas(Gal[i].CentralGal,"Ejected",i,"Ejected",gasfraction_intotype1,"deal_with_satellites", __LINE__);
-#ifdef AGNFB
+#ifdef AGNFB && FARRES
                           if(Gal[i].FarEjectedMass > 0.0)
                                 transfer_gas(Gal[i].CentralGal,"FarEjected",i,"FarEjected",gasfraction_intotype1,"deal_with_satellites", __LINE__);
 #endif
@@ -165,7 +165,7 @@ void deal_with_satellites(int centralgal, int ngal)
 			    	transfer_gas(centralgal,"Hot",i,"Hot",1.,"deal_with_satellites", __LINE__);
 			    if(Gal[i].EjectedMass > 0.0)
 			    	transfer_gas(centralgal,"Ejected",i,"Ejected",1.,"deal_with_satellites", __LINE__);
-#ifdef AGNFB
+#ifdef AGNFB && FARRES
                             if(Gal[i].FarEjectedMass > 0.0)
                                 transfer_gas(centralgal,"FarEjected",i,"FarEjected",1.,"deal_with_satellites", __LINE__);
 #endif
@@ -212,7 +212,7 @@ void deal_with_satellites(int centralgal, int ngal)
 
 		  		transfer_gas(merger_centre,"Hot",i,"Hot",stripped_fraction,"deal_with_satellites", __LINE__);
 		  		transfer_gas(merger_centre,"Ejected",i,"Ejected",stripped_fraction,"deal_with_satellites", __LINE__);
-#ifdef AGNFB
+#ifdef AGNFB && FARRES
 		  		transfer_gas(merger_centre,"FarEjected",i,"FarEjected",stripped_fraction,"deal_with_satellites", __LINE__);
 #endif
 		  		mass_checks("deal_with_satellites #3",i);
